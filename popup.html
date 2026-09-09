@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ReactionBlocker</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="brand">
+        <img class="logo" src="icons/icon48.png" width="36" height="36" alt="" />
+        <div>
+          <h1>ReactionBlocker</h1>
+          <p class="tagline">Hide reaction videos on YouTube</p>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <label class="toggle-row" for="enable-filter">
+        <span>Enable filtering</span>
+        <input id="enable-filter" type="checkbox" />
+      </label>
+
+      <section class="stat-card">
+        <span class="stat-label">Videos filtered this session</span>
+        <span id="filter-count" class="stat-value">0</span>
+      </section>
+
+      <label class="field" for="language-select">
+        <span class="field-label">Current language</span>
+        <select id="language-select">
+          <option value="auto">Auto-detect</option>
+          <option value="english">English</option>
+          <option value="german">German</option>
+        </select>
+        <span id="detected-language" class="hint"></span>
+      </label>
+
+      <div class="actions">
+        <button id="settings-btn" type="button" class="btn">Settings</button>
+        <button id="report-btn" type="button" class="btn">Report a channel</button>
+      </div>
+      <p id="placeholder-note" class="hint" hidden></p>
+    </main>
+
+    <footer class="footer">
+      <span>ReactionBlocker</span>
+      <span id="version">v1.0.0</span>
+    </footer>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
