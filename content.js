@@ -1,19 +1,3 @@
-/**
- * ReactionBlocker — YouTube content script
- *
- * Scans search/grid video cards, hides titles that match reaction keywords,
- * and keeps watching the DOM because YouTube loads results as you scroll.
- *
- * FUTURE INTEGRATION POINTS
- * -------------------------
- * blockedChannels.json  — after a title match (or instead of one), look up
- *   the channel name/id and hide if listed. See shouldHideVideo().
- * communityReports.json — same lookup using crowd-sourced reports.
- * whitelistChannels.json — skip hiding even if the title matches, when the
- *   channel is trusted. Check this BEFORE applying display:none.
- */
-
-// YouTube keeps swapping card types (classic renderers vs lockup view models).
 const VIDEO_SELECTORS = [
   "ytd-video-renderer",
   "ytd-grid-video-renderer",
@@ -58,7 +42,13 @@ const DEFAULT_SETTINGS = {
   filterCount: 0
 };
 
-let keywordsByLanguage = { english: [], german: [] };
+let keywordsByLanguage = {
+  english: [],
+  german: [],
+  finnish: [],
+  swedish: [],
+  norwegian: []
+};
 let settings = { ...DEFAULT_SETTINGS };
 let observer = null;
 let scanQueued = false;
@@ -76,14 +66,7 @@ async function init() {
   startObserver();
 }
 
-/**
- * Load data/keywords.json, then cache it in chrome.storage.local so the
- * popup and future features (custom keyword edits) share one source.
- */
 async function loadKeywordsIntoStorage() {
-  // Always re-read the packaged file so edits to keywords.json apply after
-  // reloading the extension. Storage is the shared cache for the popup and
-  // for a future in-extension keyword editor.
   try {
     const url = chrome.runtime.getURL("data/keywords.json");
     const response = await fetch(url);
@@ -197,21 +180,11 @@ function getVideoCards() {
   });
 }
 
-/**
- * Decide whether a card should be hidden.
- *
- * FUTURE: whitelistChannels.json — if channel is whitelisted, return false.
- * FUTURE: blockedChannels.json / communityReports.json — if channel is
- *   blocked/reported, return true even without a title keyword match.
- */
 function shouldHideVideo(videoEl, phrases) {
   const title = extractTitle(videoEl);
   const channel = extractChannel(videoEl);
 
   if (!title) return false;
-
-  // FUTURE whitelist check:
-  // if (isWhitelisted(channel)) return false;
 
   const matched = findMatchingKeyword(title, phrases);
   if (matched) {
@@ -219,9 +192,6 @@ function shouldHideVideo(videoEl, phrases) {
     videoEl.dataset.rbChannel = channel;
     return true;
   }
-
-  // FUTURE channel block check:
-  // if (isBlockedChannel(channel) || isCommunityReported(channel)) return true;
 
   return false;
 }
@@ -281,7 +251,7 @@ function queryFirstDeep(root, selectors) {
       const found = root.querySelector(selector);
       if (found) return found;
     } catch (_err) {
-      // Invalid selector in this document context; skip.
+      // ignore
     }
   }
 
@@ -354,12 +324,6 @@ async function bumpFilterCount() {
   await chrome.storage.local.set({ filterCount: next });
 }
 
-/**
- * Always use every language list. YouTube titles mix EN/DE constantly
- * ("Trailer Reaktion"), so a UI-language setting must not skip
- * "reaktion" when the browser is set to English.
- * The popup language control is kept for future stricter matching.
- */
 function getActiveKeywords() {
   return Object.values(keywordsByLanguage).flat();
 }
@@ -367,6 +331,9 @@ function getActiveKeywords() {
 function detectLanguageKey() {
   const nav = (navigator.language || "en").toLowerCase();
   if (nav.startsWith("de")) return "german";
+  if (nav.startsWith("fi")) return "finnish";
+  if (nav.startsWith("sv")) return "swedish";
+  if (nav.startsWith("nb") || nav.startsWith("nn") || nav.startsWith("no")) return "norwegian";
   if (nav.startsWith("en")) return "english";
   return "english";
 }

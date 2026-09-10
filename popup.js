@@ -1,11 +1,3 @@
-/**
- * ReactionBlocker popup
- *
- * FUTURE: Settings will open keyword / whitelist / block-list editors.
- * FUTURE: "Report a channel" will write into communityReports.json (or
- *   a remote endpoint) after local confirmation.
- */
-
 const enableToggle = document.getElementById("enable-filter");
 const filterCountEl = document.getElementById("filter-count");
 const languageSelect = document.getElementById("language-select");
@@ -17,7 +9,10 @@ const placeholderNote = document.getElementById("placeholder-note");
 
 const LANGUAGE_LABELS = {
   english: "English",
-  german: "German"
+  german: "German",
+  finnish: "Finnish",
+  swedish: "Swedish",
+  norwegian: "Norwegian"
 };
 
 initPopup();
@@ -61,12 +56,10 @@ languageSelect.addEventListener("change", async () => {
 });
 
 settingsBtn.addEventListener("click", () => {
-  // FUTURE: open settings page (keywords, whitelistChannels.json, blockedChannels.json)
   showPlaceholder("Settings will land in a later version.");
 });
 
 reportBtn.addEventListener("click", () => {
-  // FUTURE: collect current channel and append to communityReports.json
   showPlaceholder("Channel reporting will land in a later version.");
 });
 
@@ -78,6 +71,9 @@ function showPlaceholder(message) {
 function detectLanguageKey() {
   const nav = (navigator.language || "en").toLowerCase();
   if (nav.startsWith("de")) return "german";
+  if (nav.startsWith("fi")) return "finnish";
+  if (nav.startsWith("sv")) return "swedish";
+  if (nav.startsWith("nb") || nav.startsWith("nn") || nav.startsWith("no")) return "norwegian";
   if (nav.startsWith("en")) return "english";
   return "english";
 }

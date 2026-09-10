@@ -6,11 +6,13 @@
 
 [English](#english) · [Deutsch](#deutsch)
 
+**Supported languages:** English · German · Finnish · Swedish · Norwegian
+
 ![Manifest V3](https://img.shields.io/badge/Manifest-V3-4285F4?style=flat-square)
 ![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-EA4335?style=flat-square)
 ![Vanilla JavaScript](https://img.shields.io/badge/JavaScript-Vanilla-F7DF1E?style=flat-square)
-![English and German keywords](https://img.shields.io/badge/Keywords-EN%20%2B%20DE-00BFA5?style=flat-square)
-![Version 1.0.1](https://img.shields.io/badge/Version-1.0.1-555?style=flat-square)
+![Languages EN DE FI SV NO](https://img.shields.io/badge/Keywords-EN%20%7C%20DE%20%7C%20FI%20%7C%20SV%20%7C%20NO-00BFA5?style=flat-square)
+![Version 1.1.0](https://img.shields.io/badge/Version-1.1.0-555?style=flat-square)
 
 Search for a song, a trailer, a speech, and the first page is *someone else watching it*. ReactionBlocker is a lightweight Chrome extension that quietly removes those results from YouTube so the original content can surface again.
 
@@ -26,12 +28,12 @@ It runs entirely on your machine. No account, no analytics, no extra dependencie
 
 YouTube search is full of reaction content: “first time watching”, “reagiert auf”, “reaction”, family-react compilations, and the rest. That is fine if you want it. If you do not, it buries the video you actually searched for.
 
-ReactionBlocker matches video **titles** against a curated English and German keyword list and hides the cards that look like reactions, including results that load as you scroll.
+ReactionBlocker matches video **titles** against curated keyword lists (English, German, Finnish, Swedish, Norwegian) and hides the cards that look like reactions, including results that load as you scroll.
 
 ### Features
 
 - Filters YouTube search results (and other video grids that use the same cards)
-- English **and** German phrases (`reaction`, `reacting to`, `reaktion`, `reagiert auf`, `erste mal`, …)
+- English, German, Finnish, Swedish, and Norwegian phrases (`reaction`, `reagiert auf`, `reaktio`, `reagerar på`, `reagerer på`, …)
 - Works with YouTube’s current layout, including lockup / rich-item cards
 - Keeps filtering as infinite scroll loads more videos
 - Popup to enable/disable filtering and see how many items were hidden
@@ -72,7 +74,7 @@ Try it with queries like [reaction](https://www.youtube.com/results?search_query
 | `popup.html` / `popup.js` | Toggle, stats, language display |
 | `manifest.json` | Chrome Manifest V3 permissions and entry points |
 
-Hidden cards get `display: none` and `data-filtered="reaction"`. Matching is case-insensitive. English and German keywords are both applied, because titles mix languages all the time (*Trailer Reaktion*).
+Hidden cards get `display: none` and `data-filtered="reaction"`. Matching is case-insensitive. All language lists are applied together, because titles mix languages all the time (*Trailer Reaktion*).
 
 > Filtering is keyword-based. A documentary titled “Chain reaction” can be hidden too. Tune `data/keywords.json` if that bothers you.
 
@@ -84,7 +86,9 @@ Edit `data/keywords.json`:
 {
   "english": ["reaction", "reacting to"],
   "german": ["reaktion", "reagiert auf"],
-  "spanish": ["reacción", "reacciona a"]
+  "finnish": ["reaktio", "reagoi"],
+  "swedish": ["reaktion", "reagerar på"],
+  "norwegian": ["reaksjon", "reagerer på"]
 }
 ```
 
@@ -124,12 +128,15 @@ No build step. No `npm install`.
 
 ### Contributing
 
-The easiest way to help is by expanding keyword lists for your language. Code, layout fixes, and the rest of the product stay with the maintainers.
+The easiest way to help is by expanding keyword lists for your language. Classmates and friends: send a list in the same style as `data/keywords.json`, and we will merge it. Code, layout fixes, and the rest of the product stay with the maintainers.
+
+Swedish and Norwegian starter lists were added with AI help. Native speakers: please improve them.
 
 Add yourself below when you contribute keywords for a language:
 
 | Name | Language |
 | --- | --- |
+| | Finnish |
 | | |
 
 ### License
@@ -146,12 +153,12 @@ Not specified yet. Add a `LICENSE` file before a public release if you want a fo
 
 Wer auf YouTube ein Lied, einen Trailer oder eine Rede sucht, landet oft zuerst bei Leuten, die das Original *angucken*. „First time watching“, „reagiert auf“, „Reaktion“. Das ist okay, wenn man es will. Wenn nicht, verschwindet das eigentliche Video unter Reaktionsmüll.
 
-ReactionBlocker ist eine schlanke Chrome-Erweiterung, die solche Treffer anhand des **Titels** ausblendet. Englische und deutsche Phrasen, direkt im Browser, ohne Konto und ohne Tracker.
+ReactionBlocker ist eine schlanke Chrome-Erweiterung, die solche Treffer anhand des **Titels** ausblendet. Phrase-Listen auf Englisch, Deutsch, Finnisch, Schwedisch und Norwegisch, direkt im Browser, ohne Konto und ohne Tracker.
 
 ### Funktionen
 
 - Filtert YouTube-Suchergebnisse (und andere Grids mit denselben Karten)
-- Englische **und** deutsche Begriffe (`reaction`, `reacting to`, `reaktion`, `reagiert auf`, `erste mal`, …)
+- Englisch, Deutsch, Finnisch, Schwedisch und Norwegisch (`reaction`, `reagiert auf`, `reaktio`, `reagerar på`, `reagerer på`, …)
 - Kommt mit dem aktuellen YouTube-Layout klar (inkl. Lockup- / Rich-Item-Karten)
 - Filtert auch nach, wenn per Infinite Scroll neue Videos nachladen
 - Popup zum An- und Ausschalten und für die Anzahl ausgeblendeter Videos
@@ -192,7 +199,7 @@ Zum Testen z. B. [reaction](https://www.youtube.com/results?search_query=reactio
 | `popup.html` / `popup.js` | Schalter, Zähler, Sprache |
 | `manifest.json` | Manifest V3, Berechtigungen, Einstiegspunkte |
 
-Ausgeblendete Karten bekommen `display: none` und `data-filtered="reaction"`. Der Abgleich ignoriert Groß/Kleinschreibung. Englische und deutsche Listen gelten **gleichzeitig**, weil Titel oft gemischt sind (*Trailer Reaktion*).
+Ausgeblendete Karten bekommen `display: none` und `data-filtered="reaction"`. Der Abgleich ignoriert Groß/Kleinschreibung. Alle Sprachlisten gelten **gleichzeitig**, weil Titel oft gemischt sind (*Trailer Reaktion*).
 
 > Der Filter arbeitet mit Keywords. Ein Dokumentarfilm namens „Kettenreaktion“ / „Chain reaction“ kann also ebenfalls verschwinden. Dann `data/keywords.json` anpassen.
 
@@ -204,7 +211,9 @@ Ausgeblendete Karten bekommen `display: none` und `data-filtered="reaction"`. De
 {
   "english": ["reaction", "reacting to"],
   "german": ["reaktion", "reagiert auf"],
-  "spanish": ["reacción", "reacciona a"]
+  "finnish": ["reaktio", "reagoi"],
+  "swedish": ["reaktion", "reagerar på"],
+  "norwegian": ["reaksjon", "reagerer på"]
 }
 ```
 
@@ -244,12 +253,15 @@ Kein Build, kein `npm install`.
 
 ### Mitmachen
 
-Am einfachsten hilft ihr mit Keyword-Listen für eure Sprache. Code, Layout und der Rest bleiben bei den Maintainern.
+Am einfachsten hilft ihr mit Keyword-Listen für eure Sprache. Mitschüler und Freunde: schickt eine Liste im Stil von `data/keywords.json`, wir mergen sie. Code, Layout und der Rest bleiben bei den Maintainern.
+
+Schwedisch und Norwegisch starten mit KI-Hilfe. Muttersprachler: bitte verbessern.
 
 Tragt euch unten ein, wenn ihr Keywords für eine Sprache beigetragen habt:
 
 | Name | Sprache |
 | --- | --- |
+| | Finnisch |
 | | |
 
 ### Lizenz
