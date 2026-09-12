@@ -42,6 +42,9 @@ const DEFAULT_SETTINGS = {
   filterCount: 0
 };
 
+const FILTER_LOG_LIMIT = 80;
+const filterStorage = chrome.storage.session || chrome.storage.local;
+
 let keywordsByLanguage = {
   english: [],
   german: [],
@@ -49,10 +52,14 @@ let keywordsByLanguage = {
   swedish: [],
   norwegian: []
 };
+let softCompoundsByLanguage = {};
+let softGenreTagRegex = null;
 let settings = { ...DEFAULT_SETTINGS };
 let observer = null;
 let scanQueued = false;
 let incrementCount = true;
+let pendingFilterRecords = [];
+let flushRecordsPromise = null;
 
 init().catch((error) => {
   console.error("[ReactionBlocker] Failed to start", error);
@@ -62,28 +69,59 @@ async function init() {
   await loadKeywordsIntoStorage();
   await loadState();
   chrome.storage.onChanged.addListener(onStorageChanged);
+  const filterStored = await filterStorage.get(["filterCount"]);
+  settings.filterCount = Number(filterStored.filterCount) || 0;
   scanAndFilter();
   startObserver();
 }
 
 async function loadKeywordsIntoStorage() {
   try {
-    const url = chrome.runtime.getURL("data/keywords.json");
-    const response = await fetch(url);
-    const data = await response.json();
-    keywordsByLanguage = sanitizeKeywordMap(data);
-    await chrome.storage.local.set({ keywords: keywordsByLanguage });
+    const [keywordsData, softData] = await Promise.all([
+      fetchJsonResource("data/keywords.json"),
+      fetchJsonResource("data/soft_keywords.json")
+    ]);
+    applyKeywordData(keywordsData);
+    applySoftKeywords(softData || {});
+    await chrome.storage.local.set({
+      keywords: keywordsByLanguage,
+      softKeywords: {
+        compounds: softCompoundsByLanguage,
+        genreTags: sanitizeSoftPhraseMap(softData && softData.genreTags)
+      }
+    });
   } catch (error) {
-    console.warn("[ReactionBlocker] Could not load keywords.json", error);
-    const stored = await chrome.storage.local.get(["keywords"]);
+    console.warn("[ReactionBlocker] Could not load keyword JSON files", error);
+    const stored = await chrome.storage.local.get(["keywords", "softKeywords"]);
     if (stored.keywords) keywordsByLanguage = stored.keywords;
+    if (stored.softKeywords) applySoftKeywords(stored.softKeywords);
   }
+}
+
+async function fetchJsonResource(relativePath) {
+  const url = chrome.runtime.getURL(relativePath);
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${relativePath}: ${response.status}`);
+  }
+  return response.json();
+}
+
+function applyKeywordData(data) {
+  keywordsByLanguage = sanitizeKeywordMap(data);
+}
+
+function applySoftKeywords(soft) {
+  softCompoundsByLanguage = sanitizeSoftPhraseMap(soft && soft.compounds);
+  softGenreTagRegex = buildSoftGenreTagRegex(
+    flattenSoftGenreTags(soft && soft.genreTags)
+  );
 }
 
 function sanitizeKeywordMap(data) {
   const map = {};
-  Object.keys(data).forEach((key) => {
-    if (key.startsWith("_")) return;
+  Object.keys(data || {}).forEach((key) => {
+    if (key.startsWith("_") || key === "soft") return;
     if (Array.isArray(data[key])) {
       map[key] = data[key]
         .filter((item) => typeof item === "string" && item.trim())
@@ -93,20 +131,59 @@ function sanitizeKeywordMap(data) {
   return map;
 }
 
+function sanitizeSoftPhraseMap(obj) {
+  const map = {};
+  if (!obj || typeof obj !== "object") return map;
+  Object.keys(obj).forEach((key) => {
+    if (!Array.isArray(obj[key])) return;
+    map[key] = obj[key]
+      .filter((item) => typeof item === "string" && item.trim())
+      .map((item) => item.toLowerCase().trim());
+  });
+  return map;
+}
+
+function flattenSoftGenreTags(obj) {
+  const tags = [];
+  const map = sanitizeSoftPhraseMap(obj);
+  Object.values(map).forEach((list) => tags.push(...list));
+  return [...new Set(tags)];
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function buildSoftGenreTagRegex(tags) {
+  if (!tags.length) return null;
+  const parts = tags
+    .slice()
+    .sort((a, b) => b.length - a.length)
+    .map((tag) => escapeRegExp(tag).replace(/\s+/g, "\\s+"));
+  return new RegExp(
+    "(?:[\\-|–—|:·•/]|\\s\\/\\/\\s)\\s*(" +
+      parts.join("|") +
+      ")(?:\\s*[!?.…💥🔥]*)?\\s*$",
+    "i"
+  );
+}
+
 async function loadState() {
   const stored = await chrome.storage.local.get([
     "enabled",
     "language",
     "keywords",
-    "filterCount"
+    "softKeywords"
   ]);
 
   settings.enabled = stored.enabled !== false;
   settings.language = stored.language || "auto";
-  settings.filterCount = Number(stored.filterCount) || 0;
 
   if (stored.keywords) {
     keywordsByLanguage = stored.keywords;
+  }
+  if (stored.softKeywords) {
+    applySoftKeywords(stored.softKeywords);
   }
 }
 
@@ -129,6 +206,11 @@ function onStorageChanged(changes, area) {
 
   if (changes.keywords) {
     keywordsByLanguage = changes.keywords.newValue || keywordsByLanguage;
+    rescanWithoutDoubleCount();
+  }
+
+  if (changes.softKeywords) {
+    applySoftKeywords(changes.softKeywords.newValue || {});
     rescanWithoutDoubleCount();
   }
 }
@@ -227,6 +309,18 @@ function extractChannel(card) {
   return getTextFromSelectors(card, CHANNEL_SELECTORS);
 }
 
+function extractVideoId(card) {
+  const links = queryAllDeep(card, "a[href*='/watch'], a[href*='/shorts/']");
+  for (const link of links) {
+    const href = link.getAttribute("href") || "";
+    const watchMatch = href.match(/[?&]v=([a-zA-Z0-9_-]{6,})/);
+    if (watchMatch) return watchMatch[1];
+    const shortsMatch = href.match(/\/shorts\/([a-zA-Z0-9_-]{6,})/);
+    if (shortsMatch) return shortsMatch[1];
+  }
+  return "";
+}
+
 function getTextFromSelectors(root, selectors) {
   for (const selector of selectors) {
     const node = queryFirstDeep(root, [selector]);
@@ -284,11 +378,25 @@ function findMatchingKeyword(title, phrases) {
   for (const phrase of phrases) {
     if (phrase && haystack.includes(phrase)) return phrase;
   }
+
+  const soft = matchSoftGenreTag(title);
+  if (soft) return soft;
+
   return null;
 }
 
+function matchSoftGenreTag(title) {
+  if (!softGenreTagRegex) return null;
+  const match = title.trim().match(softGenreTagRegex);
+  if (!match) return null;
+  return `genre:${match[1].toLowerCase()}`;
+}
+
 function hideVideo(videoEl) {
-  const target = videoEl.closest("ytd-rich-item-renderer, ytd-video-renderer, ytd-grid-video-renderer, ytd-compact-video-renderer") || videoEl;
+  const target =
+    videoEl.closest(
+      "ytd-rich-item-renderer, ytd-video-renderer, ytd-grid-video-renderer, ytd-compact-video-renderer"
+    ) || videoEl;
   target.style.setProperty("display", "none", "important");
   target.dataset.filtered = "reaction";
   if (target !== videoEl) {
@@ -296,16 +404,25 @@ function hideVideo(videoEl) {
   }
 
   const title = extractTitle(videoEl);
-  const channel = extractChannel(videoEl);
+  const channel = extractChannel(videoEl) || videoEl.dataset.rbChannel || "";
   const match = videoEl.dataset.rbMatch || "";
+  const videoId = extractVideoId(videoEl);
 
-  console.log("[ReactionBlocker] Filtered:", {
-    title,
-    channel,
-    keyword: match
-  });
-
-  if (incrementCount) bumpFilterCount();
+  if (incrementCount) {
+    const entry = {
+      title,
+      channel,
+      keyword: match,
+      videoId,
+      at: Date.now()
+    };
+    console.log("[ReactionBlocker] Filtered:", {
+      title: entry.title,
+      channel: entry.channel,
+      keyword: entry.keyword
+    });
+    enqueueFilterRecord(entry);
+  }
 }
 
 function restoreHiddenVideos() {
@@ -317,15 +434,74 @@ function restoreHiddenVideos() {
   });
 }
 
-async function bumpFilterCount() {
-  const stored = await chrome.storage.local.get(["filterCount"]);
-  const next = (Number(stored.filterCount) || 0) + 1;
-  settings.filterCount = next;
-  await chrome.storage.local.set({ filterCount: next });
+function enqueueFilterRecord(entry) {
+  pendingFilterRecords.push(entry);
+  flushFilterRecords();
+}
+
+function flushFilterRecords() {
+  if (flushRecordsPromise) return flushRecordsPromise;
+
+  flushRecordsPromise = (async () => {
+    while (pendingFilterRecords.length) {
+      const batch = pendingFilterRecords.splice(0, pendingFilterRecords.length);
+      const stored = await filterStorage.get(["filterCount", "filteredLog"]);
+      let log = Array.isArray(stored.filteredLog) ? stored.filteredLog.slice() : [];
+      const seen = new Set(
+        log.map((item) => recordKey(item)).filter(Boolean)
+      );
+      let added = 0;
+
+      for (const entry of batch) {
+        const key = recordKey(entry);
+        if (key && seen.has(key)) continue;
+        if (key) seen.add(key);
+        log.unshift({
+          title: entry.title || "",
+          channel: entry.channel || "",
+          keyword: entry.keyword || "",
+          videoId: entry.videoId || "",
+          at: entry.at || Date.now()
+        });
+        added += 1;
+      }
+
+      if (!added) continue;
+
+      log = log.slice(0, FILTER_LOG_LIMIT);
+      const next = (Number(stored.filterCount) || 0) + added;
+      settings.filterCount = next;
+      await filterStorage.set({
+        filterCount: next,
+        filteredLog: log
+      });
+    }
+  })()
+    .catch((error) => {
+      console.warn("[ReactionBlocker] Failed to persist filter log", error);
+    })
+    .finally(() => {
+      flushRecordsPromise = null;
+      if (pendingFilterRecords.length) flushFilterRecords();
+    });
+
+  return flushRecordsPromise;
+}
+
+function recordKey(entry) {
+  if (!entry) return "";
+  if (entry.videoId) return `id:${entry.videoId}`;
+  const title = (entry.title || "").trim().toLowerCase();
+  const channel = (entry.channel || "").trim().toLowerCase();
+  if (!title) return "";
+  return `t:${title}|c:${channel}`;
 }
 
 function getActiveKeywords() {
-  return Object.values(keywordsByLanguage).flat();
+  return [
+    ...Object.values(keywordsByLanguage).flat(),
+    ...Object.values(softCompoundsByLanguage).flat()
+  ];
 }
 
 function detectLanguageKey() {

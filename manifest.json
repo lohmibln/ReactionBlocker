@@ -1,10 +1,16 @@
 {
   "manifest_version": 3,
   "name": "ReactionBlocker",
-  "version": "1.1.0",
+  "version": "1.1.4",
   "description": "Filters reaction videos out of YouTube search results and related feeds.",
-  "permissions": ["storage", "activeTab", "scripting"],
-  "host_permissions": ["https://www.youtube.com/*"],
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://www.youtube.com/*"
+  ],
   "action": {
     "default_popup": "popup.html",
     "default_title": "ReactionBlocker",
@@ -21,15 +27,24 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://www.youtube.com/*"],
-      "js": ["content.js"],
+      "matches": [
+        "https://www.youtube.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_idle"
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["data/keywords.json"],
-      "matches": ["https://www.youtube.com/*"]
+      "resources": [
+        "data/keywords.json",
+        "data/soft_keywords.json"
+      ],
+      "matches": [
+        "https://www.youtube.com/*"
+      ]
     }
   ]
 }

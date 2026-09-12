@@ -12,7 +12,7 @@
 ![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-EA4335?style=flat-square)
 ![Vanilla JavaScript](https://img.shields.io/badge/JavaScript-Vanilla-F7DF1E?style=flat-square)
 ![Languages EN DE FI SV NO](https://img.shields.io/badge/Keywords-EN%20%7C%20DE%20%7C%20FI%20%7C%20SV%20%7C%20NO-00BFA5?style=flat-square)
-![Version 1.1.0](https://img.shields.io/badge/Version-1.1.0-555?style=flat-square)
+![Version 1.1.4](https://img.shields.io/badge/Version-1.1.4-555?style=flat-square)
 
 Search for a song, a trailer, a speech, and the first page is *someone else watching it*. ReactionBlocker is a lightweight Chrome extension that quietly removes those results from YouTube so the original content can surface again.
 
@@ -36,8 +36,9 @@ ReactionBlocker matches video **titles** against curated keyword lists (English,
 - English, German, Finnish, Swedish, and Norwegian phrases (`reaction`, `reagiert auf`, `reaktio`, `reagerar på`, `reagerer på`, …)
 - Works with YouTube’s current layout, including lockup / rich-item cards
 - Keeps filtering as infinite scroll loads more videos
-- Popup to enable/disable filtering and see how many items were hidden
-- Easy to extend: add a language by editing one JSON file
+- Popup to enable/disable filtering, see how many items were hidden, and review recently filtered titles
+- Soft genre tags / compounds in `data/soft_keywords.json` (safer synonyms without bare-word overblocking)
+- Easy to extend: add a language by editing the JSON keyword files
 - Vanilla JavaScript, Manifest V3, no third-party libraries
 
 ### Install (unpacked)
@@ -70,8 +71,9 @@ Try it with queries like [reaction](https://www.youtube.com/results?search_query
 | Piece | Role |
 | --- | --- |
 | `content.js` | Scans video cards, matches titles, hides hits, observes new results |
-| `data/keywords.json` | Phrase lists grouped by language |
-| `popup.html` / `popup.js` | Toggle, stats, language display |
+| `data/keywords.json` | Hard phrase lists grouped by language |
+| `data/soft_keywords.json` | Soft genre tags and compound phrases |
+| `popup.html` / `popup.js` | Toggle, stats, recent filtered list, language display |
 | `manifest.json` | Chrome Manifest V3 permissions and entry points |
 
 Hidden cards get `display: none` and `data-filtered="reaction"`. Matching is case-insensitive. All language lists are applied together, because titles mix languages all the time (*Trailer Reaktion*).
@@ -80,7 +82,7 @@ Hidden cards get `display: none` and `data-filtered="reaction"`. Matching is cas
 
 ### Add keywords or a language
 
-Edit `data/keywords.json`:
+Hard phrases go in `data/keywords.json`. Soft genre tags and compounds go in `data/soft_keywords.json`:
 
 ```json
 {
@@ -119,25 +121,41 @@ reaction-blocker/
 ├── popup.css
 ├── popup.js
 ├── data/
-│   └── keywords.json
+│   ├── keywords.json
+│   └── soft_keywords.json
 ├── icons/
+├── CHANGELOG.md
 └── README.md
 ```
 
 No build step. No `npm install`.
 
+### Helpers
+
+Helpers support the project with testing, feedback, and translations. They are **not** the project author.
+
+**Author:** [lohmibln](https://github.com/lohmibln)
+
+| Helper | Contribution |
+| --- | --- |
+| [Christian Scherlipp](https://github.com/ChristianScherlipp/) | Bug reports and testing feedback (keyword false-positive risk; UI vs console filter list) |
+
+**Translations**
+
+| Language | Credit |
+| --- | --- |
+| German | [lohmibln](https://github.com/lohmibln) |
+| Swedish | [lohmibln](https://github.com/lohmibln) |
+| Norwegian | [lohmibln](https://github.com/lohmibln) |
+| Finnish | Community contribution |
+
+Swedish and Norwegian starter lists also had AI assistance. Native speakers: improvements welcome.
+
 ### Contributing
 
-The easiest way to help is by expanding keyword lists for your language. Classmates and friends: send a list in the same style as `data/keywords.json`, and we will merge it. Code, layout fixes, and the rest of the product stay with the maintainers.
+The easiest way to help is by expanding keyword lists for your language (`data/keywords.json` and, for soft synonyms, `data/soft_keywords.json`). Classmates and friends: send a list in the same style, and we will merge it. Code, layout fixes, and the rest of the product stay with the maintainers.
 
-Swedish and Norwegian starter lists were added with AI help. Native speakers: please improve them.
-
-Add yourself below when you contribute keywords for a language:
-
-| Name | Language |
-| --- | --- |
-| | Finnish |
-| | |
+See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ### License
 
@@ -161,7 +179,8 @@ ReactionBlocker ist eine schlanke Chrome-Erweiterung, die solche Treffer anhand 
 - Englisch, Deutsch, Finnisch, Schwedisch und Norwegisch (`reaction`, `reagiert auf`, `reaktio`, `reagerar på`, `reagerer på`, …)
 - Kommt mit dem aktuellen YouTube-Layout klar (inkl. Lockup- / Rich-Item-Karten)
 - Filtert auch nach, wenn per Infinite Scroll neue Videos nachladen
-- Popup zum An- und Ausschalten und für die Anzahl ausgeblendeter Videos
+- Popup zum An- und Ausschalten, für die Anzahl ausgeblendeter Videos und die zuletzt gefilterten Titel
+- Weiche Genre-Tags / Phrasen in `data/soft_keywords.json` (sicherere Synonyme ohne Einzelwort-Overblocking)
 - Neue Sprachen: einfach JSON erweitern
 - Nur Vanilla-JavaScript, Manifest V3, keine Fremdbibliotheken
 
@@ -195,8 +214,9 @@ Zum Testen z. B. [reaction](https://www.youtube.com/results?search_query=reactio
 | Datei | Aufgabe |
 | --- | --- |
 | `content.js` | Karten scannen, Titel prüfen, Treffer ausblenden, neue Ergebnisse beobachten |
-| `data/keywords.json` | Wortlisten nach Sprache |
-| `popup.html` / `popup.js` | Schalter, Zähler, Sprache |
+| `data/keywords.json` | Harte Wortlisten nach Sprache |
+| `data/soft_keywords.json` | Weiche Genre-Tags und Mehrwort-Phrasen |
+| `popup.html` / `popup.js` | Schalter, Zähler, zuletzt gefilterte Videos, Sprache |
 | `manifest.json` | Manifest V3, Berechtigungen, Einstiegspunkte |
 
 Ausgeblendete Karten bekommen `display: none` und `data-filtered="reaction"`. Der Abgleich ignoriert Groß/Kleinschreibung. Alle Sprachlisten gelten **gleichzeitig**, weil Titel oft gemischt sind (*Trailer Reaktion*).
@@ -205,7 +225,7 @@ Ausgeblendete Karten bekommen `display: none` und `data-filtered="reaction"`. De
 
 ### Keywords oder Sprache hinzufügen
 
-`data/keywords.json` bearbeiten:
+Harte Phrasen in `data/keywords.json`, weiche Genre-Tags/Komposita in `data/soft_keywords.json`:
 
 ```json
 {
@@ -244,25 +264,41 @@ reaction-blocker/
 ├── popup.css
 ├── popup.js
 ├── data/
-│   └── keywords.json
+│   ├── keywords.json
+│   └── soft_keywords.json
 ├── icons/
+├── CHANGELOG.md
 └── README.md
 ```
 
 Kein Build, kein `npm install`.
 
+### Helferinnen und Helfer
+
+Hilfe bei Tests, Feedback und Übersetzungen. Das sind **keine** Projekt-Autor:innen.
+
+**Autor:** [lohmibln](https://github.com/lohmibln)
+
+| Person | Beitrag |
+| --- | --- |
+| [Christian Scherlipp](https://github.com/ChristianScherlipp/) | Bug-Reports und Test-Feedback (Keyword-Fehlalarme; Abweichung UI vs. Konsole) |
+
+**Übersetzungen**
+
+| Sprache | Credit |
+| --- | --- |
+| Deutsch | [lohmibln](https://github.com/lohmibln) |
+| Schwedisch | [lohmibln](https://github.com/lohmibln) |
+| Norwegisch | [lohmibln](https://github.com/lohmibln) |
+| Finnisch | Community contribution |
+
+Schwedisch und Norwegisch starten zusätzlich mit KI-Hilfe. Muttersprachler: bitte verbessern.
+
 ### Mitmachen
 
-Am einfachsten hilft ihr mit Keyword-Listen für eure Sprache. Mitschüler und Freunde: schickt eine Liste im Stil von `data/keywords.json`, wir mergen sie. Code, Layout und der Rest bleiben bei den Maintainern.
+Am einfachsten hilft ihr mit Keyword-Listen für eure Sprache (`data/keywords.json` und für weiche Synonyme `data/soft_keywords.json`). Mitschüler und Freunde: schickt eine Liste im gleichen Stil, wir mergen sie. Code, Layout und der Rest bleiben bei den Maintainern.
 
-Schwedisch und Norwegisch starten mit KI-Hilfe. Muttersprachler: bitte verbessern.
-
-Tragt euch unten ein, wenn ihr Keywords für eine Sprache beigetragen habt:
-
-| Name | Sprache |
-| --- | --- |
-| | Finnisch |
-| | |
+Release-Historie: [CHANGELOG.md](CHANGELOG.md).
 
 ### Lizenz
 
