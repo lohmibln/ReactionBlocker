@@ -82,7 +82,7 @@ Hidden cards get `display: none` and `data-filtered="reaction"`. Matching is cas
 
 ### Add keywords or a language
 
-Edit `data/keywords.json`:
+Hard phrases go in `data/keywords.json`. Soft genre tags and compounds go in `data/soft_keywords.json`:
 
 ```json
 {
@@ -225,7 +225,7 @@ Ausgeblendete Karten bekommen `display: none` und `data-filtered="reaction"`. De
 
 ### Keywords oder Sprache hinzufügen
 
-`data/keywords.json` bearbeiten:
+Harte Phrasen in `data/keywords.json`, weiche Genre-Tags/Komposita in `data/soft_keywords.json`:
 
 ```json
 {
