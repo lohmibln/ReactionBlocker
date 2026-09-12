@@ -36,9 +36,6 @@ const CHANNEL_SELECTORS = [
   "yt-formatted-string.ytd-channel-name"
 ];
 
-// Soft genre tags / compounds live in data/soft_keywords.json.
-// Tags only match as end-of-title labels after a separator (not bare words).
-
 const DEFAULT_SETTINGS = {
   enabled: true,
   language: "auto",
@@ -72,7 +69,6 @@ async function init() {
   await loadKeywordsIntoStorage();
   await loadState();
   chrome.storage.onChanged.addListener(onStorageChanged);
-  // Keep filterCount in sync if popup/session already has a value.
   const filterStored = await filterStorage.get(["filterCount"]);
   settings.filterCount = Number(filterStored.filterCount) || 0;
   scanAndFilter();
@@ -412,8 +408,6 @@ function hideVideo(videoEl) {
   const match = videoEl.dataset.rbMatch || "";
   const videoId = extractVideoId(videoEl);
 
-  // Keep console and popup on the same event stream: only record+log when
-  // this hide should count (skip silent rescans after language/keyword changes).
   if (incrementCount) {
     const entry = {
       title,

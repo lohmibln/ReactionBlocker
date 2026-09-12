@@ -132,7 +132,6 @@ function renderGroupedByChannel(entries) {
     groups.get(channel).push(entry);
   });
 
-  // Preserve chronological feel: order groups by newest entry inside each group.
   const ordered = [...groups.entries()].sort((a, b) => {
     const aAt = Number(a[1][0]?.at) || 0;
     const bAt = Number(b[1][0]?.at) || 0;
