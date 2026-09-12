@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ReactionBlocker",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Filters reaction videos out of YouTube search results and related feeds.",
   "permissions": ["storage", "activeTab", "scripting"],
   "host_permissions": ["https://www.youtube.com/*"],

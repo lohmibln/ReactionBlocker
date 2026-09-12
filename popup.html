@@ -28,6 +28,18 @@
         <span id="filter-count" class="stat-value">0</span>
       </section>
 
+      <section class="log-section" aria-labelledby="filtered-heading">
+        <div class="log-header">
+          <h2 id="filtered-heading">Recently filtered</h2>
+          <label class="group-toggle" for="group-by-channel">
+            <input id="group-by-channel" type="checkbox" />
+            Group by channel
+          </label>
+        </div>
+        <p id="filtered-empty" class="hint log-empty">No filtered videos recorded yet.</p>
+        <ul id="filtered-list" class="filtered-list" hidden></ul>
+      </section>
+
       <label class="field" for="language-select">
         <span class="field-label">Current language</span>
         <select id="language-select">

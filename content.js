@@ -36,11 +36,19 @@ const CHANNEL_SELECTORS = [
   "yt-formatted-string.ytd-channel-name"
 ];
 
+// Soft German genre tags (Statement/Analyse/Ansage/Skandal) only match when used
+// like a reaction label after a separator — not as standalone topic words.
+const SOFT_GENRE_TAG_RE =
+  /(?:[\-|–—|:·•/]|\s\/\/\s)\s*(statement|analyse|ansage|skandal)\b(?:\s*[!?.…💥🔥]*)?\s*$/i;
+
 const DEFAULT_SETTINGS = {
   enabled: true,
   language: "auto",
   filterCount: 0
 };
+
+const FILTER_LOG_LIMIT = 80;
+const filterStorage = chrome.storage.session || chrome.storage.local;
 
 let keywordsByLanguage = {
   english: [],
@@ -53,6 +61,8 @@ let settings = { ...DEFAULT_SETTINGS };
 let observer = null;
 let scanQueued = false;
 let incrementCount = true;
+let pendingFilterRecords = [];
+let flushRecordsPromise = null;
 
 init().catch((error) => {
   console.error("[ReactionBlocker] Failed to start", error);
@@ -62,6 +72,9 @@ async function init() {
   await loadKeywordsIntoStorage();
   await loadState();
   chrome.storage.onChanged.addListener(onStorageChanged);
+  // Keep filterCount in sync if popup/session already has a value.
+  const filterStored = await filterStorage.get(["filterCount"]);
+  settings.filterCount = Number(filterStored.filterCount) || 0;
   scanAndFilter();
   startObserver();
 }
@@ -97,13 +110,11 @@ async function loadState() {
   const stored = await chrome.storage.local.get([
     "enabled",
     "language",
-    "keywords",
-    "filterCount"
+    "keywords"
   ]);
 
   settings.enabled = stored.enabled !== false;
   settings.language = stored.language || "auto";
-  settings.filterCount = Number(stored.filterCount) || 0;
 
   if (stored.keywords) {
     keywordsByLanguage = stored.keywords;
@@ -227,6 +238,18 @@ function extractChannel(card) {
   return getTextFromSelectors(card, CHANNEL_SELECTORS);
 }
 
+function extractVideoId(card) {
+  const links = queryAllDeep(card, "a[href*='/watch'], a[href*='/shorts/']");
+  for (const link of links) {
+    const href = link.getAttribute("href") || "";
+    const watchMatch = href.match(/[?&]v=([a-zA-Z0-9_-]{6,})/);
+    if (watchMatch) return watchMatch[1];
+    const shortsMatch = href.match(/\/shorts\/([a-zA-Z0-9_-]{6,})/);
+    if (shortsMatch) return shortsMatch[1];
+  }
+  return "";
+}
+
 function getTextFromSelectors(root, selectors) {
   for (const selector of selectors) {
     const node = queryFirstDeep(root, [selector]);
@@ -284,11 +307,24 @@ function findMatchingKeyword(title, phrases) {
   for (const phrase of phrases) {
     if (phrase && haystack.includes(phrase)) return phrase;
   }
+
+  const soft = matchSoftGenreTag(title);
+  if (soft) return soft;
+
   return null;
 }
 
+function matchSoftGenreTag(title) {
+  const match = title.trim().match(SOFT_GENRE_TAG_RE);
+  if (!match) return null;
+  return `genre:${match[1].toLowerCase()}`;
+}
+
 function hideVideo(videoEl) {
-  const target = videoEl.closest("ytd-rich-item-renderer, ytd-video-renderer, ytd-grid-video-renderer, ytd-compact-video-renderer") || videoEl;
+  const target =
+    videoEl.closest(
+      "ytd-rich-item-renderer, ytd-video-renderer, ytd-grid-video-renderer, ytd-compact-video-renderer"
+    ) || videoEl;
   target.style.setProperty("display", "none", "important");
   target.dataset.filtered = "reaction";
   if (target !== videoEl) {
@@ -296,16 +332,27 @@ function hideVideo(videoEl) {
   }
 
   const title = extractTitle(videoEl);
-  const channel = extractChannel(videoEl);
+  const channel = extractChannel(videoEl) || videoEl.dataset.rbChannel || "";
   const match = videoEl.dataset.rbMatch || "";
+  const videoId = extractVideoId(videoEl);
 
-  console.log("[ReactionBlocker] Filtered:", {
-    title,
-    channel,
-    keyword: match
-  });
-
-  if (incrementCount) bumpFilterCount();
+  // Keep console and popup on the same event stream: only record+log when
+  // this hide should count (skip silent rescans after language/keyword changes).
+  if (incrementCount) {
+    const entry = {
+      title,
+      channel,
+      keyword: match,
+      videoId,
+      at: Date.now()
+    };
+    console.log("[ReactionBlocker] Filtered:", {
+      title: entry.title,
+      channel: entry.channel,
+      keyword: entry.keyword
+    });
+    enqueueFilterRecord(entry);
+  }
 }
 
 function restoreHiddenVideos() {
@@ -317,11 +364,67 @@ function restoreHiddenVideos() {
   });
 }
 
-async function bumpFilterCount() {
-  const stored = await chrome.storage.local.get(["filterCount"]);
-  const next = (Number(stored.filterCount) || 0) + 1;
-  settings.filterCount = next;
-  await chrome.storage.local.set({ filterCount: next });
+function enqueueFilterRecord(entry) {
+  pendingFilterRecords.push(entry);
+  flushFilterRecords();
+}
+
+function flushFilterRecords() {
+  if (flushRecordsPromise) return flushRecordsPromise;
+
+  flushRecordsPromise = (async () => {
+    while (pendingFilterRecords.length) {
+      const batch = pendingFilterRecords.splice(0, pendingFilterRecords.length);
+      const stored = await filterStorage.get(["filterCount", "filteredLog"]);
+      let log = Array.isArray(stored.filteredLog) ? stored.filteredLog.slice() : [];
+      const seen = new Set(
+        log.map((item) => recordKey(item)).filter(Boolean)
+      );
+      let added = 0;
+
+      for (const entry of batch) {
+        const key = recordKey(entry);
+        if (key && seen.has(key)) continue;
+        if (key) seen.add(key);
+        log.unshift({
+          title: entry.title || "",
+          channel: entry.channel || "",
+          keyword: entry.keyword || "",
+          videoId: entry.videoId || "",
+          at: entry.at || Date.now()
+        });
+        added += 1;
+      }
+
+      if (!added) continue;
+
+      log = log.slice(0, FILTER_LOG_LIMIT);
+      const next = (Number(stored.filterCount) || 0) + added;
+      settings.filterCount = next;
+      await filterStorage.set({
+        filterCount: next,
+        filteredLog: log
+      });
+    }
+  })()
+    .catch((error) => {
+      console.warn("[ReactionBlocker] Failed to persist filter log", error);
+    })
+    .finally(() => {
+      flushRecordsPromise = null;
+      if (pendingFilterRecords.length) flushFilterRecords();
+    });
+
+  return flushRecordsPromise;
+}
+
+function recordKey(entry) {
+  if (!entry) return "";
+  if (entry.videoId) return `id:${entry.videoId}`;
+  const title = (entry.title || "").trim().toLowerCase();
+  const channel = (entry.channel || "").trim().toLowerCase();
+  if (!title) return "";
+  return `t:${title}|c:${channel}`;
 }
 
 function getActiveKeywords() {
