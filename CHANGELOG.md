@@ -15,7 +15,7 @@ and this project uses [Semantic Versioning](https://semver.org/).
 
 ### Credits
 - Testing / bug reports: [Christian Scherlipp](https://github.com/ChristianScherlipp/)
-- Translations: German, Swedish, Norwegian by [lohmibln](https://github.com/lohmibln); Finnish — friend (non-coding translation help; name TBD)
+- Translations: German, Swedish, Norwegian by [lohmibln](https://github.com/lohmibln); Finnish — community contribution
 
 ## [1.1.3] - 2026-09-12
 

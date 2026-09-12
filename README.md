@@ -147,7 +147,7 @@ Helpers support the project with testing, feedback, and translations. They are *
 | German | [lohmibln](https://github.com/lohmibln) |
 | Swedish | [lohmibln](https://github.com/lohmibln) |
 | Norwegian | [lohmibln](https://github.com/lohmibln) |
-| Finnish | Friend (non-coding translation help; name TBD) |
+| Finnish | Community contribution |
 
 Swedish and Norwegian starter lists also had AI assistance. Native speakers: improvements welcome.
 
@@ -290,7 +290,7 @@ Hilfe bei Tests, Feedback und Übersetzungen. Das sind **keine** Projekt-Autor:i
 | Deutsch | [lohmibln](https://github.com/lohmibln) |
 | Schwedisch | [lohmibln](https://github.com/lohmibln) |
 | Norwegisch | [lohmibln](https://github.com/lohmibln) |
-| Finnisch | Freund:in (Übersetzungshilfe ohne Code; Name folgt) |
+| Finnisch | Community contribution |
 
 Schwedisch und Norwegisch starten zusätzlich mit KI-Hilfe. Muttersprachler: bitte verbessern.
 
