@@ -36,10 +36,8 @@ const CHANNEL_SELECTORS = [
   "yt-formatted-string.ytd-channel-name"
 ];
 
-// Soft German genre tags (Statement/Analyse/Ansage/Skandal) only match when used
-// like a reaction label after a separator — not as standalone topic words.
-const SOFT_GENRE_TAG_RE =
-  /(?:[\-|–—|:·•/]|\s\/\/\s)\s*(statement|analyse|ansage|skandal)\b(?:\s*[!?.…💥🔥]*)?\s*$/i;
+// Soft genre tags / compounds live in data/keywords.json under "soft".
+// Tags only match as end-of-title labels after a separator (not bare words).
 
 const DEFAULT_SETTINGS = {
   enabled: true,
@@ -57,6 +55,8 @@ let keywordsByLanguage = {
   swedish: [],
   norwegian: []
 };
+let softCompoundsByLanguage = {};
+let softGenreTagRegex = null;
 let settings = { ...DEFAULT_SETTINGS };
 let observer = null;
 let scanQueued = false;
@@ -84,19 +84,43 @@ async function loadKeywordsIntoStorage() {
     const url = chrome.runtime.getURL("data/keywords.json");
     const response = await fetch(url);
     const data = await response.json();
-    keywordsByLanguage = sanitizeKeywordMap(data);
-    await chrome.storage.local.set({ keywords: keywordsByLanguage });
+    applyKeywordData(data);
+    await chrome.storage.local.set({
+      keywords: keywordsByLanguage,
+      softKeywords: {
+        compounds: softCompoundsByLanguage,
+        genreTags: collectSoftGenreTagsByLanguage(data)
+      }
+    });
   } catch (error) {
     console.warn("[ReactionBlocker] Could not load keywords.json", error);
-    const stored = await chrome.storage.local.get(["keywords"]);
+    const stored = await chrome.storage.local.get(["keywords", "softKeywords"]);
     if (stored.keywords) keywordsByLanguage = stored.keywords;
+    if (stored.softKeywords) applySoftKeywords(stored.softKeywords);
   }
+}
+
+function applyKeywordData(data) {
+  keywordsByLanguage = sanitizeKeywordMap(data);
+  applySoftKeywords((data && data.soft) || {});
+}
+
+function applySoftKeywords(soft) {
+  softCompoundsByLanguage = sanitizeSoftPhraseMap(soft && soft.compounds);
+  softGenreTagRegex = buildSoftGenreTagRegex(
+    flattenSoftGenreTags(soft && soft.genreTags)
+  );
+}
+
+function collectSoftGenreTagsByLanguage(data) {
+  const soft = (data && data.soft) || {};
+  return sanitizeSoftPhraseMap(soft.genreTags);
 }
 
 function sanitizeKeywordMap(data) {
   const map = {};
-  Object.keys(data).forEach((key) => {
-    if (key.startsWith("_")) return;
+  Object.keys(data || {}).forEach((key) => {
+    if (key.startsWith("_") || key === "soft") return;
     if (Array.isArray(data[key])) {
       map[key] = data[key]
         .filter((item) => typeof item === "string" && item.trim())
@@ -106,11 +130,49 @@ function sanitizeKeywordMap(data) {
   return map;
 }
 
+function sanitizeSoftPhraseMap(obj) {
+  const map = {};
+  if (!obj || typeof obj !== "object") return map;
+  Object.keys(obj).forEach((key) => {
+    if (!Array.isArray(obj[key])) return;
+    map[key] = obj[key]
+      .filter((item) => typeof item === "string" && item.trim())
+      .map((item) => item.toLowerCase().trim());
+  });
+  return map;
+}
+
+function flattenSoftGenreTags(obj) {
+  const tags = [];
+  const map = sanitizeSoftPhraseMap(obj);
+  Object.values(map).forEach((list) => tags.push(...list));
+  return [...new Set(tags)];
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function buildSoftGenreTagRegex(tags) {
+  if (!tags.length) return null;
+  const parts = tags
+    .slice()
+    .sort((a, b) => b.length - a.length)
+    .map((tag) => escapeRegExp(tag).replace(/\s+/g, "\\s+"));
+  return new RegExp(
+    "(?:[\\-|–—|:·•/]|\\s\\/\\/\\s)\\s*(" +
+      parts.join("|") +
+      ")(?:\\s*[!?.…💥🔥]*)?\\s*$",
+    "i"
+  );
+}
+
 async function loadState() {
   const stored = await chrome.storage.local.get([
     "enabled",
     "language",
-    "keywords"
+    "keywords",
+    "softKeywords"
   ]);
 
   settings.enabled = stored.enabled !== false;
@@ -118,6 +180,9 @@ async function loadState() {
 
   if (stored.keywords) {
     keywordsByLanguage = stored.keywords;
+  }
+  if (stored.softKeywords) {
+    applySoftKeywords(stored.softKeywords);
   }
 }
 
@@ -140,6 +205,11 @@ function onStorageChanged(changes, area) {
 
   if (changes.keywords) {
     keywordsByLanguage = changes.keywords.newValue || keywordsByLanguage;
+    rescanWithoutDoubleCount();
+  }
+
+  if (changes.softKeywords) {
+    applySoftKeywords(changes.softKeywords.newValue || {});
     rescanWithoutDoubleCount();
   }
 }
@@ -315,7 +385,8 @@ function findMatchingKeyword(title, phrases) {
 }
 
 function matchSoftGenreTag(title) {
-  const match = title.trim().match(SOFT_GENRE_TAG_RE);
+  if (!softGenreTagRegex) return null;
+  const match = title.trim().match(softGenreTagRegex);
   if (!match) return null;
   return `genre:${match[1].toLowerCase()}`;
 }
@@ -428,7 +499,10 @@ function recordKey(entry) {
 }
 
 function getActiveKeywords() {
-  return Object.values(keywordsByLanguage).flat();
+  return [
+    ...Object.values(keywordsByLanguage).flat(),
+    ...Object.values(softCompoundsByLanguage).flat()
+  ];
 }
 
 function detectLanguageKey() {

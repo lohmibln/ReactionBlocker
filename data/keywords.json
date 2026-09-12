@@ -160,31 +160,7 @@
     "reagiert jetzt",
     "produzent reagiert",
     "musiker reagiert",
-    "sprecher reagiert",
-    "statement zu",
-    "statement zum",
-    "statement zur",
-    "mein statement",
-    "ehrliches statement",
-    "mein ehrliches statement",
-    "analyse zu",
-    "analyse zum",
-    "analyse zur",
-    "meine analyse",
-    "reaktion analyse",
-    "analyse reaktion",
-    "reaktionsanalyse",
-    "analyse und reaktion",
-    "analyse & reaktion",
-    "ansage zu",
-    "ansage zum",
-    "ansage zur",
-    "meine ansage",
-    "klare ansage",
-    "skandal reaktion",
-    "reaktion skandal",
-    "reaktion auf den skandal",
-    "reaktion zum skandal"
+    "sprecher reagiert"
   ],
   "finnish": [
     "reaktio",
@@ -433,5 +409,132 @@
     "stemmeskuespiller reagerer",
     "produsent reagerer",
     "musiker reagerer"
-  ]
+  ],
+  "soft": {
+    "genreTags": {
+      "english": [
+        "statement",
+        "analysis",
+        "take",
+        "rant",
+        "hot take"
+      ],
+      "german": [
+        "statement",
+        "analyse",
+        "ansage",
+        "skandal"
+      ],
+      "finnish": [
+        "lausunto",
+        "analyysi",
+        "skandaali",
+        "kannanotto"
+      ],
+      "swedish": [
+        "uttalande",
+        "analys",
+        "skandal",
+        "tillrättavisning"
+      ],
+      "norwegian": [
+        "uttalelse",
+        "analyse",
+        "skandale",
+        "beskjed"
+      ]
+    },
+    "compounds": {
+      "english": [
+        "my statement",
+        "honest statement",
+        "my analysis",
+        "my analysis of",
+        "quick analysis",
+        "honest analysis",
+        "reaction analysis",
+        "analysis and reaction",
+        "analysis & reaction",
+        "my take on",
+        "my take",
+        "honest take",
+        "hot take on",
+        "my rant",
+        "my rant about",
+        "my thoughts on",
+        "honest thoughts on"
+      ],
+      "german": [
+        "statement zu",
+        "statement zum",
+        "statement zur",
+        "mein statement",
+        "ehrliches statement",
+        "mein ehrliches statement",
+        "analyse zu",
+        "analyse zum",
+        "analyse zur",
+        "meine analyse",
+        "reaktion analyse",
+        "analyse reaktion",
+        "reaktionsanalyse",
+        "analyse und reaktion",
+        "analyse & reaktion",
+        "ansage zu",
+        "ansage zum",
+        "ansage zur",
+        "meine ansage",
+        "klare ansage",
+        "skandal reaktion",
+        "reaktion skandal",
+        "reaktion auf den skandal",
+        "reaktion zum skandal"
+      ],
+      "finnish": [
+        "minun lausunto",
+        "lausunto aiheesta",
+        "lausunto videosta",
+        "minun analyysi",
+        "minun analyysi aiheesta",
+        "reaktio analyysi",
+        "analyysi ja reaktio",
+        "analyysi & reaktio",
+        "minun kannanotto",
+        "kannanotto aiheesta",
+        "skandaali reaktio",
+        "reaktio skandaaliin",
+        "reaktio skandaalista"
+      ],
+      "swedish": [
+        "mitt uttalande",
+        "ärligt uttalande",
+        "mitt uttalande om",
+        "min analys",
+        "min analys av",
+        "reaktion analys",
+        "analys och reaktion",
+        "analys & reaktion",
+        "min tillrättavisning",
+        "skandal reaktion",
+        "reaktion på skandalen",
+        "reaktion till skandalen"
+      ],
+      "norwegian": [
+        "min uttalelse",
+        "ærlig uttalelse",
+        "min uttalelse om",
+        "min analyse",
+        "min analyse av",
+        "reaksjon analyse",
+        "analyse og reaksjon",
+        "analyse & reaksjon",
+        "klar beskjed",
+        "klar beskjed om",
+        "min beskjed",
+        "skandale reaksjon",
+        "reaksjon på skandalen",
+        "reaksjon til skandalen"
+      ]
+    }
+  }
 }
