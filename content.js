@@ -36,7 +36,7 @@ const CHANNEL_SELECTORS = [
   "yt-formatted-string.ytd-channel-name"
 ];
 
-// Soft genre tags / compounds live in data/keywords.json under "soft".
+// Soft genre tags / compounds live in data/soft_keywords.json.
 // Tags only match as end-of-title labels after a separator (not bare words).
 
 const DEFAULT_SETTINGS = {
@@ -81,28 +81,38 @@ async function init() {
 
 async function loadKeywordsIntoStorage() {
   try {
-    const url = chrome.runtime.getURL("data/keywords.json");
-    const response = await fetch(url);
-    const data = await response.json();
-    applyKeywordData(data);
+    const [keywordsData, softData] = await Promise.all([
+      fetchJsonResource("data/keywords.json"),
+      fetchJsonResource("data/soft_keywords.json")
+    ]);
+    applyKeywordData(keywordsData);
+    applySoftKeywords(softData || {});
     await chrome.storage.local.set({
       keywords: keywordsByLanguage,
       softKeywords: {
         compounds: softCompoundsByLanguage,
-        genreTags: collectSoftGenreTagsByLanguage(data)
+        genreTags: sanitizeSoftPhraseMap(softData && softData.genreTags)
       }
     });
   } catch (error) {
-    console.warn("[ReactionBlocker] Could not load keywords.json", error);
+    console.warn("[ReactionBlocker] Could not load keyword JSON files", error);
     const stored = await chrome.storage.local.get(["keywords", "softKeywords"]);
     if (stored.keywords) keywordsByLanguage = stored.keywords;
     if (stored.softKeywords) applySoftKeywords(stored.softKeywords);
   }
 }
 
+async function fetchJsonResource(relativePath) {
+  const url = chrome.runtime.getURL(relativePath);
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${relativePath}: ${response.status}`);
+  }
+  return response.json();
+}
+
 function applyKeywordData(data) {
   keywordsByLanguage = sanitizeKeywordMap(data);
-  applySoftKeywords((data && data.soft) || {});
 }
 
 function applySoftKeywords(soft) {
@@ -110,11 +120,6 @@ function applySoftKeywords(soft) {
   softGenreTagRegex = buildSoftGenreTagRegex(
     flattenSoftGenreTags(soft && soft.genreTags)
   );
-}
-
-function collectSoftGenreTagsByLanguage(data) {
-  const soft = (data && data.soft) || {};
-  return sanitizeSoftPhraseMap(soft.genreTags);
 }
 
 function sanitizeKeywordMap(data) {
