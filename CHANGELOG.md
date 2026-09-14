@@ -5,6 +5,15 @@ All notable changes to ReactionBlocker are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [1.1.5] - 2026-09-14
+
+### Fixed
+- Filtered videos now hide on full page reload / first paint without waiting for scroll.
+- Content script starts its MutationObserver before async keyword load, observes title/aria-label hydration, runs a short scan burst after ready, and re-bursts on YouTube SPA navigation.
+
+### Changed
+- Content script `run_at` moved from `document_idle` to `document_end` for earlier injection.
+
 ## [1.1.4] - 2026-09-12
 
 ### Added

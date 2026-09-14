@@ -12,7 +12,7 @@
 ![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-EA4335?style=flat-square)
 ![Vanilla JavaScript](https://img.shields.io/badge/JavaScript-Vanilla-F7DF1E?style=flat-square)
 ![Languages EN DE FI SV NO](https://img.shields.io/badge/Keywords-EN%20%7C%20DE%20%7C%20FI%20%7C%20SV%20%7C%20NO-00BFA5?style=flat-square)
-![Version 1.1.4](https://img.shields.io/badge/Version-1.1.4-555?style=flat-square)
+![Version 1.1.5](https://img.shields.io/badge/Version-1.1.5-555?style=flat-square)
 
 Search for a song, a trailer, a speech, and the first page is *someone else watching it*. ReactionBlocker is a lightweight Chrome extension that quietly removes those results from YouTube so the original content can surface again.
 

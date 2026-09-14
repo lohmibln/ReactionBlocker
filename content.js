@@ -57,22 +57,38 @@ let softGenreTagRegex = null;
 let settings = { ...DEFAULT_SETTINGS };
 let observer = null;
 let scanQueued = false;
+let readyToFilter = false;
 let incrementCount = true;
 let pendingFilterRecords = [];
 let flushRecordsPromise = null;
+let scanBurstTimer = null;
+let lastUrl = location.href;
+
+// Observe DOM ASAP so cards that appear during async keyword/storage load are not missed.
+startObserver();
+watchSpaNavigation();
 
 init().catch((error) => {
   console.error("[ReactionBlocker] Failed to start", error);
 });
 
 async function init() {
-  await loadKeywordsIntoStorage();
+  // Use cached keywords immediately when available so reload filtering does not
+  // wait on packaged JSON fetch.
   await loadState();
   chrome.storage.onChanged.addListener(onStorageChanged);
   const filterStored = await filterStorage.get(["filterCount"]);
   settings.filterCount = Number(filterStored.filterCount) || 0;
-  scanAndFilter();
-  startObserver();
+
+  if (getActiveKeywords().length || softGenreTagRegex) {
+    readyToFilter = true;
+    scheduleScanBurst();
+  }
+
+  await loadKeywordsIntoStorage();
+  readyToFilter = true;
+  // First paint + short burst: YouTube often hydrates titles after shells exist.
+  scheduleScanBurst();
 }
 
 async function loadKeywordsIntoStorage() {
@@ -195,7 +211,7 @@ function onStorageChanged(changes, area) {
     if (!settings.enabled) {
       restoreHiddenVideos();
     } else {
-      scanAndFilter();
+      scheduleScanBurst();
     }
   }
 
@@ -226,22 +242,64 @@ function startObserver() {
   if (observer) observer.disconnect();
 
   observer = new MutationObserver(() => {
-    if (scanQueued) return;
-    scanQueued = true;
-    requestAnimationFrame(() => {
-      scanQueued = false;
-      scanAndFilter();
-    });
+    queueScan();
   });
 
+  // Titles often land via aria-label/title after the card node already exists;
+  // childList-only observation misses that and waits until scroll adds nodes.
   observer.observe(document.documentElement, {
     childList: true,
-    subtree: true
+    subtree: true,
+    attributes: true,
+    attributeFilter: ["title", "aria-label", "href"]
   });
 }
 
+function watchSpaNavigation() {
+  const onMaybeNavigate = () => {
+    if (location.href === lastUrl) return;
+    lastUrl = location.href;
+    scheduleScanBurst();
+  };
+
+  window.addEventListener("yt-navigate-finish", onMaybeNavigate, true);
+  window.addEventListener("popstate", onMaybeNavigate);
+  // Fallback when YouTube mutates history without firing yt-navigate-finish promptly.
+  setInterval(onMaybeNavigate, 1000);
+}
+
+function queueScan() {
+  if (scanQueued) return;
+  scanQueued = true;
+  requestAnimationFrame(() => {
+    scanQueued = false;
+    scanAndFilter();
+  });
+}
+
+function scheduleScanBurst() {
+  if (!readyToFilter) return;
+  scanAndFilter();
+
+  if (scanBurstTimer) {
+    clearInterval(scanBurstTimer);
+    scanBurstTimer = null;
+  }
+
+  let attempts = 0;
+  const maxAttempts = 40; // ~4s at 100ms — covers search result hydration after reload
+  scanBurstTimer = setInterval(() => {
+    attempts += 1;
+    scanAndFilter();
+    if (attempts >= maxAttempts) {
+      clearInterval(scanBurstTimer);
+      scanBurstTimer = null;
+    }
+  }, 100);
+}
+
 function scanAndFilter() {
-  if (!settings.enabled) return;
+  if (!readyToFilter || !settings.enabled) return;
 
   const phrases = getActiveKeywords();
   if (!phrases.length) return;
