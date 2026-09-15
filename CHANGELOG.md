@@ -5,6 +5,11 @@ All notable changes to ReactionBlocker are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+- Project licensed under MIT; added root `LICENSE` and README license links.
+
 ## [1.1.5] - 2026-09-14
 
 ### Fixed
