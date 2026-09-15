@@ -125,6 +125,7 @@ reaction-blocker/
 │   └── soft_keywords.json
 ├── icons/
 ├── CHANGELOG.md
+├── LICENSE
 └── README.md
 ```
 
@@ -159,7 +160,7 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ### License
 
-Not specified yet. Add a `LICENSE` file before a public release if you want a formal one.
+MIT — see [LICENSE](LICENSE).
 
 ---
 
@@ -268,6 +269,7 @@ reaction-blocker/
 │   └── soft_keywords.json
 ├── icons/
 ├── CHANGELOG.md
+├── LICENSE
 └── README.md
 ```
 
@@ -302,7 +304,7 @@ Release-Historie: [CHANGELOG.md](CHANGELOG.md).
 
 ### Lizenz
 
-Noch nicht festgelegt. Vor einer öffentlichen Veröffentlichung eine `LICENSE`-Datei ergänzen.
+MIT — siehe [LICENSE](LICENSE).
 
 ---
 
