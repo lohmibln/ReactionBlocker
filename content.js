@@ -50,7 +50,9 @@ let keywordsByLanguage = {
   german: [],
   finnish: [],
   swedish: [],
-  norwegian: []
+  norwegian: [],
+  japanese: [],
+  romaji: []
 };
 let softCompoundsByLanguage = {};
 let softGenreTagRegex = null;
@@ -568,6 +570,7 @@ function detectLanguageKey() {
   if (nav.startsWith("fi")) return "finnish";
   if (nav.startsWith("sv")) return "swedish";
   if (nav.startsWith("nb") || nav.startsWith("nn") || nav.startsWith("no")) return "norwegian";
+  if (nav.startsWith("ja")) return "japanese";
   if (nav.startsWith("en")) return "english";
   return "english";
 }

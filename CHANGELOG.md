@@ -10,6 +10,16 @@ and this project uses [Semantic Versioning](https://semver.org/).
 ### Changed
 - Project licensed under MIT; added root `LICENSE` and README license links.
 
+## [1.1.6] - 2026-09-16
+
+### Added
+- Japanese hard phrases (`japanese`) and romanized forms (`romaji`) in `data/keywords.json`.
+- Japanese / romaji soft genre tags and compounds in `data/soft_keywords.json`.
+- Popup language options for Japanese and Japanese (romaji); auto-detect for `ja*`.
+
+### Credits
+- Japanese translation help by **Aiko** — community contribution
+
 ## [1.1.5] - 2026-09-14
 
 ### Fixed
@@ -69,7 +79,9 @@ and this project uses [Semantic Versioning](https://semver.org/).
 - Popup toggle, filter count, and language display.
 - Infinite-scroll / live DOM filtering via mutation observer.
 
-[1.1.4]: https://github.com/lohmibln/ReactionBlocker/compare/v1.1.3...HEAD
+[1.1.6]: https://github.com/lohmibln/ReactionBlocker/compare/v1.1.5...v1.1.6
+[1.1.5]: https://github.com/lohmibln/ReactionBlocker/compare/v1.1.4...v1.1.5
+[1.1.4]: https://github.com/lohmibln/ReactionBlocker/compare/v1.1.3...v1.1.4
 [1.1.3]: https://github.com/lohmibln/ReactionBlocker/compare/v1.1.2...v1.1.3
 [1.1.2]: https://github.com/lohmibln/ReactionBlocker/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/lohmibln/ReactionBlocker/compare/v1.1.0...v1.1.1

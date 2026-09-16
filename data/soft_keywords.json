@@ -30,6 +30,28 @@
       "analyse",
       "skandale",
       "beskjed"
+    ],
+    "japanese": [
+      "声明",
+      "分析",
+      "考察",
+      "感想",
+      "意見",
+      "持論",
+      "本音",
+      "炎上",
+      "騒動"
+    ],
+    "romaji": [
+      "seimei",
+      "bunseki",
+      "kosatsu",
+      "kanso",
+      "iken",
+      "jiron",
+      "honne",
+      "enjo",
+      "sodo"
     ]
   },
   "compounds": {
@@ -122,6 +144,52 @@
       "skandale reaksjon",
       "reaksjon på skandalen",
       "reaksjon til skandalen"
+    ],
+    "japanese": [
+      "私の声明",
+      "正直な声明",
+      "私の分析",
+      "徹底分析",
+      "簡単に分析",
+      "リアクション分析",
+      "反応分析",
+      "分析とリアクション",
+      "分析と反応",
+      "私の考察",
+      "正直な感想",
+      "私の感想",
+      "感想を語る",
+      "私の意見",
+      "本音を語る",
+      "炎上について",
+      "炎上を分析",
+      "騒動について",
+      "騒動を分析",
+      "炎上への反応",
+      "騒動への反応"
+    ],
+    "romaji": [
+      "watashi no seimei",
+      "shojiki na seimei",
+      "watashi no bunseki",
+      "tettei bunseki",
+      "kantan ni bunseki",
+      "riakushon bunseki",
+      "hanno bunseki",
+      "bunseki to riakushon",
+      "bunseki to hanno",
+      "watashi no kosatsu",
+      "shojiki na kanso",
+      "watashi no kanso",
+      "kanso o kataru",
+      "watashi no iken",
+      "honne o kataru",
+      "enjo ni tsuite",
+      "enjo o bunseki",
+      "sodo ni tsuite",
+      "sodo o bunseki",
+      "enjo e no hanno",
+      "sodo e no hanno"
     ]
   }
 }

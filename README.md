@@ -6,13 +6,13 @@
 
 [English](#english) · [Deutsch](#deutsch)
 
-**Supported languages:** English · German · Finnish · Swedish · Norwegian
+**Supported languages:** English · German · Finnish · Swedish · Norwegian · Japanese (native + romaji)
 
 ![Manifest V3](https://img.shields.io/badge/Manifest-V3-4285F4?style=flat-square)
 ![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-EA4335?style=flat-square)
 ![Vanilla JavaScript](https://img.shields.io/badge/JavaScript-Vanilla-F7DF1E?style=flat-square)
-![Languages EN DE FI SV NO](https://img.shields.io/badge/Keywords-EN%20%7C%20DE%20%7C%20FI%20%7C%20SV%20%7C%20NO-00BFA5?style=flat-square)
-![Version 1.1.5](https://img.shields.io/badge/Version-1.1.5-555?style=flat-square)
+![Languages EN DE FI SV NO JA](https://img.shields.io/badge/Keywords-EN%20%7C%20DE%20%7C%20FI%20%7C%20SV%20%7C%20NO%20%7C%20JA-00BFA5?style=flat-square)
+![Version 1.1.6](https://img.shields.io/badge/Version-1.1.6-555?style=flat-square)
 
 Search for a song, a trailer, a speech, and the first page is *someone else watching it*. ReactionBlocker is a lightweight Chrome extension that quietly removes those results from YouTube so the original content can surface again.
 
@@ -28,12 +28,12 @@ It runs entirely on your machine. No account, no analytics, no extra dependencie
 
 YouTube search is full of reaction content: “first time watching”, “reagiert auf”, “reaction”, family-react compilations, and the rest. That is fine if you want it. If you do not, it buries the video you actually searched for.
 
-ReactionBlocker matches video **titles** against curated keyword lists (English, German, Finnish, Swedish, Norwegian) and hides the cards that look like reactions, including results that load as you scroll.
+ReactionBlocker matches video **titles** against curated keyword lists (English, German, Finnish, Swedish, Norwegian, Japanese native script, and Japanese romaji) and hides the cards that look like reactions, including results that load as you scroll.
 
 ### Features
 
 - Filters YouTube search results (and other video grids that use the same cards)
-- English, German, Finnish, Swedish, and Norwegian phrases (`reaction`, `reagiert auf`, `reaktio`, `reagerar på`, `reagerer på`, …)
+- English, German, Finnish, Swedish, Norwegian, and Japanese phrases (`reaction`, `reagiert auf`, `reaktio`, `reagerar på`, `reagerer på`, `リアクション`, `riakushon`, …)
 - Works with YouTube’s current layout, including lockup / rich-item cards
 - Keeps filtering as infinite scroll loads more videos
 - Popup to enable/disable filtering, see how many items were hidden, and review recently filtered titles
@@ -90,7 +90,9 @@ Hard phrases go in `data/keywords.json`. Soft genre tags and compounds go in `da
   "german": ["reaktion", "reagiert auf"],
   "finnish": ["reaktio", "reagoi"],
   "swedish": ["reaktion", "reagerar på"],
-  "norwegian": ["reaksjon", "reagerer på"]
+  "norwegian": ["reaksjon", "reagerer på"],
+  "japanese": ["リアクション", "反応"],
+  "romaji": ["riakushon", "hanno"]
 }
 ```
 
@@ -149,6 +151,7 @@ Helpers support the project with testing, feedback, and translations. They are *
 | Swedish | [lohmibln](https://github.com/lohmibln) |
 | Norwegian | [lohmibln](https://github.com/lohmibln) |
 | Finnish | Community contribution |
+| Japanese (native + romaji) | Aiko — community contribution |
 
 Swedish and Norwegian starter lists also had AI assistance. Native speakers: improvements welcome.
 
@@ -172,12 +175,12 @@ MIT — see [LICENSE](LICENSE).
 
 Wer auf YouTube ein Lied, einen Trailer oder eine Rede sucht, landet oft zuerst bei Leuten, die das Original *angucken*. „First time watching“, „reagiert auf“, „Reaktion“. Das ist okay, wenn man es will. Wenn nicht, verschwindet das eigentliche Video unter Reaktionsmüll.
 
-ReactionBlocker ist eine schlanke Chrome-Erweiterung, die solche Treffer anhand des **Titels** ausblendet. Phrase-Listen auf Englisch, Deutsch, Finnisch, Schwedisch und Norwegisch, direkt im Browser, ohne Konto und ohne Tracker.
+ReactionBlocker ist eine schlanke Chrome-Erweiterung, die solche Treffer anhand des **Titels** ausblendet. Phrase-Listen auf Englisch, Deutsch, Finnisch, Schwedisch, Norwegisch und Japanisch (Schrift + Romaji), direkt im Browser, ohne Konto und ohne Tracker.
 
 ### Funktionen
 
 - Filtert YouTube-Suchergebnisse (und andere Grids mit denselben Karten)
-- Englisch, Deutsch, Finnisch, Schwedisch und Norwegisch (`reaction`, `reagiert auf`, `reaktio`, `reagerar på`, `reagerer på`, …)
+- Englisch, Deutsch, Finnisch, Schwedisch, Norwegisch und Japanisch (`reaction`, `reagiert auf`, `reaktio`, `reagerar på`, `reagerer på`, `リアクション`, `riakushon`, …)
 - Kommt mit dem aktuellen YouTube-Layout klar (inkl. Lockup- / Rich-Item-Karten)
 - Filtert auch nach, wenn per Infinite Scroll neue Videos nachladen
 - Popup zum An- und Ausschalten, für die Anzahl ausgeblendeter Videos und die zuletzt gefilterten Titel
@@ -234,7 +237,9 @@ Harte Phrasen in `data/keywords.json`, weiche Genre-Tags/Komposita in `data/soft
   "german": ["reaktion", "reagiert auf"],
   "finnish": ["reaktio", "reagoi"],
   "swedish": ["reaktion", "reagerar på"],
-  "norwegian": ["reaksjon", "reagerer på"]
+  "norwegian": ["reaksjon", "reagerer på"],
+  "japanese": ["リアクション", "反応"],
+  "romaji": ["riakushon", "hanno"]
 }
 ```
 
@@ -293,6 +298,7 @@ Hilfe bei Tests, Feedback und Übersetzungen. Das sind **keine** Projekt-Autor:i
 | Schwedisch | [lohmibln](https://github.com/lohmibln) |
 | Norwegisch | [lohmibln](https://github.com/lohmibln) |
 | Finnisch | Community contribution |
+| Japanisch (Schrift + Romaji) | Aiko — community contribution |
 
 Schwedisch und Norwegisch starten zusätzlich mit KI-Hilfe. Muttersprachler: bitte verbessern.
 
