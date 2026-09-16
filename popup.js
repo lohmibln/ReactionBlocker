@@ -15,7 +15,9 @@ const LANGUAGE_LABELS = {
   german: "German",
   finnish: "Finnish",
   swedish: "Swedish",
-  norwegian: "Norwegian"
+  norwegian: "Norwegian",
+  japanese: "Japanese",
+  romaji: "Japanese (romaji)"
 };
 
 const filterStorage = chrome.storage.session || chrome.storage.local;
@@ -188,6 +190,7 @@ function detectLanguageKey() {
   if (nav.startsWith("fi")) return "finnish";
   if (nav.startsWith("sv")) return "swedish";
   if (nav.startsWith("nb") || nav.startsWith("nn") || nav.startsWith("no")) return "norwegian";
+  if (nav.startsWith("ja")) return "japanese";
   if (nav.startsWith("en")) return "english";
   return "english";
 }
