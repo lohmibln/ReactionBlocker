@@ -5,12 +5,16 @@
   "description": "Filters reaction videos out of YouTube search results and related feeds.",
   "permissions": [
     "storage",
-    "activeTab",
-    "scripting"
+    "tabs"
   ],
   "host_permissions": [
-    "https://www.youtube.com/*"
+    "https://www.youtube.com/*",
+    "https://youtube.com/*",
+    "https://m.youtube.com/*"
   ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
     "default_popup": "popup.html",
     "default_title": "ReactionBlocker",
@@ -28,9 +32,12 @@
   "content_scripts": [
     {
       "matches": [
-        "https://www.youtube.com/*"
+        "https://www.youtube.com/*",
+        "https://youtube.com/*",
+        "https://m.youtube.com/*"
       ],
       "js": [
+        "data/keyword-data.js",
         "content.js"
       ],
       "run_at": "document_end"
@@ -43,7 +50,9 @@
         "data/soft_keywords.json"
       ],
       "matches": [
-        "https://www.youtube.com/*"
+        "https://www.youtube.com/*",
+        "https://youtube.com/*",
+        "https://m.youtube.com/*"
       ]
     }
   ]

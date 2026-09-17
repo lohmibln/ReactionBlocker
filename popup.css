@@ -22,6 +22,10 @@ body {
   font-family: "Segoe UI", Arial, sans-serif;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 body {
   padding: 16px;
 }
@@ -218,6 +222,24 @@ select {
   margin-top: 6px;
   color: var(--muted);
   font-size: 11px;
+}
+
+.status-note {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.status-note.ok {
+  background: #142214;
+  color: #9ad19a;
+}
+
+.status-note.warn {
+  background: #2a1a12;
+  color: #f0c090;
 }
 
 .actions {

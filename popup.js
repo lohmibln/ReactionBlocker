@@ -9,6 +9,7 @@ const placeholderNote = document.getElementById("placeholder-note");
 const filteredListEl = document.getElementById("filtered-list");
 const filteredEmptyEl = document.getElementById("filtered-empty");
 const groupByChannelEl = document.getElementById("group-by-channel");
+const pageStatusEl = document.getElementById("page-status");
 
 const LANGUAGE_LABELS = {
   english: "English",
@@ -20,7 +21,7 @@ const LANGUAGE_LABELS = {
   romaji: "Japanese (romaji)"
 };
 
-const filterStorage = chrome.storage.session || chrome.storage.local;
+const sessionStore = chrome.storage.session;
 
 let filteredLog = [];
 
@@ -38,7 +39,7 @@ async function initPopup() {
     "language",
     "groupFilteredByChannel"
   ]);
-  const filterStored = await filterStorage.get(["filterCount", "filteredLog"]);
+  const filterStored = await sessionStore.get(["filterCount", "filteredLog"]);
 
   enableToggle.checked = stored.enabled !== false;
   languageSelect.value = stored.language || "auto";
@@ -51,11 +52,10 @@ async function initPopup() {
     await chrome.storage.local.set({ enabled: true, language: "auto" });
   }
 
-  chrome.storage.onChanged.addListener((changes, area) => {
-    const isFilterArea =
-      area === "session" || (area === "local" && !chrome.storage.session);
+  await ensureContentScript();
 
-    if (isFilterArea) {
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === "session") {
       if (changes.filterCount) {
         filterCountEl.textContent = String(Number(changes.filterCount.newValue) || 0);
       }
@@ -182,6 +182,64 @@ function buildEntryItem(entry, options = {}) {
 function showPlaceholder(message) {
   placeholderNote.hidden = false;
   placeholderNote.textContent = message;
+}
+
+function setPageStatus(message, kind) {
+  if (!message) {
+    pageStatusEl.hidden = true;
+    pageStatusEl.textContent = "";
+    pageStatusEl.className = "status-note";
+    return;
+  }
+  pageStatusEl.hidden = false;
+  pageStatusEl.textContent = message;
+  pageStatusEl.className = `status-note ${kind || "warn"}`;
+}
+
+function isYouTubeUrl(url) {
+  try {
+    const host = new URL(url).hostname;
+    return host === "www.youtube.com" || host === "youtube.com" || host === "m.youtube.com";
+  } catch (_err) {
+    return false;
+  }
+}
+
+async function pingTab(tabId) {
+  try {
+    return await chrome.tabs.sendMessage(tabId, { type: "rb-ping" });
+  } catch (_err) {
+    return null;
+  }
+}
+
+async function ensureContentScript() {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.id || !tab.url) {
+    setPageStatus("Open a YouTube tab to filter reaction videos.", "warn");
+    return;
+  }
+  if (!isYouTubeUrl(tab.url)) {
+    setPageStatus("Open YouTube, then reload this popup. Filtering only runs on youtube.com.", "warn");
+    return;
+  }
+
+  let info = await pingTab(tab.id);
+  if (!info?.ok) {
+    setPageStatus(
+      "Not running on this tab yet. Hard-refresh YouTube with Ctrl+Shift+R after reloading the extension.",
+      "warn"
+    );
+    return;
+  }
+
+  if (!info.keywordCount) {
+    setPageStatus("Running, but no keywords loaded. Reload the extension, then refresh YouTube.", "warn");
+    return;
+  }
+
+  setPageStatus(`Active on this tab · ${info.keywordCount} phrases loaded.`, "ok");
+  chrome.tabs.sendMessage(tab.id, { type: "rb-rescan" }).catch(() => {});
 }
 
 function detectLanguageKey() {

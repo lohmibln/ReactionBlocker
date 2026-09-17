@@ -7,7 +7,17 @@ and this project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- Content script loads keywords from a bundled JS file and does not call `chrome.storage` or fetch extension JSON on YouTube pages (those calls were reported as extension errors and aborted filtering).
+- Filtering attaches to already-open YouTube tabs after an extension reload.
+- Reaction videos opened on the watch page are blocked too, not only search/grid cards.
+
+### Added
+- Toolbar badge showing how many videos were filtered in the current browser session.
+- Popup status line showing whether the content script is active on the current tab.
+
 ### Changed
+- Session filter count and recent list now live in `chrome.storage.session` (reset when Chrome quits), instead of accumulating in local storage.
 - Project licensed under MIT; added root `LICENSE` and README license links.
 
 ## [1.1.6] - 2026-09-16
