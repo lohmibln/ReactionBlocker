@@ -12,7 +12,7 @@
 ![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-EA4335?style=flat-square)
 ![Vanilla JavaScript](https://img.shields.io/badge/JavaScript-Vanilla-F7DF1E?style=flat-square)
 ![Languages EN DE FI SV NO JA](https://img.shields.io/badge/Keywords-EN%20%7C%20DE%20%7C%20FI%20%7C%20SV%20%7C%20NO%20%7C%20JA-00BFA5?style=flat-square)
-![Version 1.1.6](https://img.shields.io/badge/Version-1.1.6-555?style=flat-square)
+![Version 2.1.0](https://img.shields.io/badge/Version-2.1.0-555?style=flat-square)
 
 Search for a song, a trailer, a speech, and the first page is *someone else watching it*. ReactionBlocker is a lightweight Chrome extension that quietly removes those results from YouTube so the original content can surface again.
 
@@ -28,7 +28,7 @@ It runs entirely on your machine. No account, no analytics, no extra dependencie
 
 YouTube search is full of reaction content: “first time watching”, “reagiert auf”, “reaction”, family-react compilations, and the rest. That is fine if you want it. If you do not, it buries the video you actually searched for.
 
-ReactionBlocker matches video **titles** against curated keyword lists (English, German, Finnish, Swedish, Norwegian, Japanese native script, and Japanese romaji) and hides the cards that look like reactions, including results that load as you scroll.
+ReactionBlocker matches video **titles** against curated keyword lists (English, German, Finnish, Swedish, Norwegian, Japanese native script, and Japanese romaji) and hides the cards that look like reactions, including results that load as you scroll. You can also hide **every video from a channel** via a local blocklist in Settings.
 
 ### Features
 
@@ -37,6 +37,7 @@ ReactionBlocker matches video **titles** against curated keyword lists (English,
 - Works with YouTube’s current layout, including lockup / rich-item cards
 - Keeps filtering as infinite scroll loads more videos
 - Popup to enable/disable filtering, see how many items were hidden, and review recently filtered titles
+- Local channel blocklist in **Settings**: paste a channel link (`youtube.com/@name`, including `/videos`, `/shorts`, playlists, …) to hide all of that channel’s videos; remove it there to show them again
 - Soft genre tags / compounds in `data/soft_keywords.json` (safer synonyms without bare-word overblocking)
 - Easy to extend: add a language by editing the JSON keyword files
 - Vanilla JavaScript, Manifest V3, no third-party libraries
@@ -62,6 +63,7 @@ After you change code or `keywords.json`, click **Reload** on the extension card
    - turn filtering on or off
    - see how many videos were filtered
    - view the detected browser language
+   - open **Settings** and block or unblock channels
 4. Optional: DevTools → Console shows `[ReactionBlocker] Filtered:` with title, channel, and the keyword that matched.
 
 Try it with queries like [reaction](https://www.youtube.com/results?search_query=reaction), [reagiert auf](https://www.youtube.com/results?search_query=reagiert+auf), or [first time watching](https://www.youtube.com/results?search_query=first+time+watching).
@@ -70,13 +72,14 @@ Try it with queries like [reaction](https://www.youtube.com/results?search_query
 
 | Piece | Role |
 | --- | --- |
-| `content.js` | Scans video cards, matches titles, hides hits, observes new results |
+| `content.js` | Scans video cards, matches titles and blocked channels, hides hits, observes new results |
+| `channel-blocklist.js` | Parses channel links/handles/IDs and matches the blocklist |
 | `data/keywords.json` | Hard phrase lists grouped by language |
 | `data/soft_keywords.json` | Soft genre tags and compound phrases |
-| `popup.html` / `popup.js` | Toggle, stats, recent filtered list, language display |
+| `popup.html` / `popup.js` | Toggle, stats, recent filtered list, Settings / channel blocklist |
 | `manifest.json` | Chrome Manifest V3 permissions and entry points |
 
-Hidden cards get `display: none` and `data-filtered="reaction"`. Matching is case-insensitive. All language lists are applied together, because titles mix languages all the time (*Trailer Reaktion*).
+Hidden cards get `display: none` and `data-filtered="reaction"` or `data-filtered="channel"`. Title matching is case-insensitive. All language lists are applied together, because titles mix languages all the time (*Trailer Reaktion*). Channel blocks prefer a link (`@handle` / channel ID), not the display name.
 
 > Filtering is keyword-based. A documentary titled “Chain reaction” can be hidden too. Tune `data/keywords.json` if that bothers you.
 
@@ -103,22 +106,23 @@ Hard phrases go in `data/keywords.json`. Soft genre tags and compounds go in `da
 
 ### Roadmap
 
-Not built yet. Hooks already exist in `content.js` and the popup.
+Not built yet.
 
 | Feature | Planned file | Idea |
 | --- | --- | --- |
-| Local channel blocklist | `blockedChannels.json` | Hide a channel even without a title match |
 | Community reports | `communityReports.json` | Crowdsource known reaction channels |
 | Whitelist | `whitelistChannels.json` | Keep commentary / news channels visible |
 
-Popup buttons **Settings** and **Report a channel** are placeholders for those features.
+The popup button **Report a channel** is a placeholder for community reports. Channel blocking lives in **Settings**.
 
 ### Project layout
 
 ```
 reaction-blocker/
 ├── manifest.json
+├── background.js
 ├── content.js
+├── channel-blocklist.js
 ├── popup.html
 ├── popup.css
 ├── popup.js
@@ -131,7 +135,7 @@ reaction-blocker/
 └── README.md
 ```
 
-No build step. No `npm install`.
+No build step. No `npm install`. The channel blocklist is stored in the browser (`chrome.storage.local`), not in a repo JSON file.
 
 ### Helpers
 
@@ -175,7 +179,7 @@ MIT — see [LICENSE](LICENSE).
 
 Wer auf YouTube ein Lied, einen Trailer oder eine Rede sucht, landet oft zuerst bei Leuten, die das Original *angucken*. „First time watching“, „reagiert auf“, „Reaktion“. Das ist okay, wenn man es will. Wenn nicht, verschwindet das eigentliche Video unter Reaktionsmüll.
 
-ReactionBlocker ist eine schlanke Chrome-Erweiterung, die solche Treffer anhand des **Titels** ausblendet. Phrase-Listen auf Englisch, Deutsch, Finnisch, Schwedisch, Norwegisch und Japanisch (Schrift + Romaji), direkt im Browser, ohne Konto und ohne Tracker.
+ReactionBlocker ist eine schlanke Chrome-Erweiterung, die solche Treffer anhand des **Titels** ausblendet. Phrase-Listen auf Englisch, Deutsch, Finnisch, Schwedisch, Norwegisch und Japanisch (Schrift + Romaji), direkt im Browser, ohne Konto und ohne Tracker. Zusätzlich kannst du in den **Einstellungen** ganze **Kanäle** sperren, dann verschwinden alle Videos davon.
 
 ### Funktionen
 
@@ -184,6 +188,7 @@ ReactionBlocker ist eine schlanke Chrome-Erweiterung, die solche Treffer anhand 
 - Kommt mit dem aktuellen YouTube-Layout klar (inkl. Lockup- / Rich-Item-Karten)
 - Filtert auch nach, wenn per Infinite Scroll neue Videos nachladen
 - Popup zum An- und Ausschalten, für die Anzahl ausgeblendeter Videos und die zuletzt gefilterten Titel
+- Lokale Kanalsperre unter **Settings**: Kanallink einfügen (`youtube.com/@name`, auch `/videos`, `/shorts`, Playlists, …), dann sind alle Videos dieses Kanals weg; Entfernen blendet sie wieder ein
 - Weiche Genre-Tags / Phrasen in `data/soft_keywords.json` (sicherere Synonyme ohne Einzelwort-Overblocking)
 - Neue Sprachen: einfach JSON erweitern
 - Nur Vanilla-JavaScript, Manifest V3, keine Fremdbibliotheken
@@ -209,6 +214,7 @@ Nach Änderungen an Code oder `keywords.json`: auf der Erweiterungskarte **Aktua
    - den Filter an- und ausschalten
    - sehen, wie viele Videos gefiltert wurden
    - die erkannte Browsersprache ansehen
+   - unter **Settings** Kanäle sperren oder wieder freigeben
 4. Optional: In der Konsole (DevTools) erscheint `[ReactionBlocker] Filtered:` mit Titel, Kanal und Trefferwort.
 
 Zum Testen z. B. [reaction](https://www.youtube.com/results?search_query=reaction), [reagiert auf](https://www.youtube.com/results?search_query=reagiert+auf) oder [erste mal](https://www.youtube.com/results?search_query=erste+mal).
@@ -217,13 +223,14 @@ Zum Testen z. B. [reaction](https://www.youtube.com/results?search_query=reactio
 
 | Datei | Aufgabe |
 | --- | --- |
-| `content.js` | Karten scannen, Titel prüfen, Treffer ausblenden, neue Ergebnisse beobachten |
+| `content.js` | Karten scannen, Titel und gesperrte Kanäle prüfen, Treffer ausblenden, neue Ergebnisse beobachten |
+| `channel-blocklist.js` | Kanallinks / Handles / IDs parsen und gegen die Sperrliste prüfen |
 | `data/keywords.json` | Harte Wortlisten nach Sprache |
 | `data/soft_keywords.json` | Weiche Genre-Tags und Mehrwort-Phrasen |
-| `popup.html` / `popup.js` | Schalter, Zähler, zuletzt gefilterte Videos, Sprache |
+| `popup.html` / `popup.js` | Schalter, Zähler, zuletzt gefilterte Videos, Settings / Kanalsperre |
 | `manifest.json` | Manifest V3, Berechtigungen, Einstiegspunkte |
 
-Ausgeblendete Karten bekommen `display: none` und `data-filtered="reaction"`. Der Abgleich ignoriert Groß/Kleinschreibung. Alle Sprachlisten gelten **gleichzeitig**, weil Titel oft gemischt sind (*Trailer Reaktion*).
+Ausgeblendete Karten bekommen `display: none` und `data-filtered="reaction"` oder `data-filtered="channel"`. Der Titel-Abgleich ignoriert Groß/Kleinschreibung. Alle Sprachlisten gelten **gleichzeitig**, weil Titel oft gemischt sind (*Trailer Reaktion*). Kanalsperren nutzen bevorzugt den Link (`@handle` / Kanal-ID), nicht den Anzeigenamen.
 
 > Der Filter arbeitet mit Keywords. Ein Dokumentarfilm namens „Kettenreaktion“ / „Chain reaction“ kann also ebenfalls verschwinden. Dann `data/keywords.json` anpassen.
 
@@ -250,22 +257,23 @@ Harte Phrasen in `data/keywords.json`, weiche Genre-Tags/Komposita in `data/soft
 
 ### Ausblick
 
-Noch nicht gebaut. Die Stellen im Code sind schon markiert.
+Noch nicht gebaut.
 
 | Feature | Geplante Datei | Idee |
 | --- | --- | --- |
-| Lokale Kanalsperre | `blockedChannels.json` | Kanal ausblenden, auch ohne Titel-Treffer |
 | Community-Meldungen | `communityReports.json` | Bekannte Reaktionskanäle sammeln |
 | Whitelist | `whitelistChannels.json` | Kommentare / Nachrichten sichtbar lassen |
 
-Die Popup-Buttons **Settings** und **Report a channel** sind Platzhalter dafür.
+Der Popup-Button **Report a channel** ist der Platzhalter für Community-Meldungen. Die Kanalsperre liegt unter **Settings**.
 
 ### Ordnerstruktur
 
 ```
 reaction-blocker/
 ├── manifest.json
+├── background.js
 ├── content.js
+├── channel-blocklist.js
 ├── popup.html
 ├── popup.css
 ├── popup.js
@@ -278,7 +286,7 @@ reaction-blocker/
 └── README.md
 ```
 
-Kein Build, kein `npm install`.
+Kein Build, kein `npm install`. Die Kanalsperre liegt im Browser (`chrome.storage.local`), nicht in einer JSON-Datei im Repo.
 
 ### Helferinnen und Helfer
 
