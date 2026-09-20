@@ -7,14 +7,26 @@ and this project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-09-20
+
+### Fixed
+- Channel links with extra path segments are reduced to the channel itself before blocking. `youtube.com/@name/videos`, `/shorts`, `/playlists`, `/about`, and similar tabs all resolve to `@name`.
+- Bare `@name/videos`-style input (no domain) and `/channel/UC…/videos` URLs are treated as that channel, not as a display name or unknown page.
+- Playlist links (`youtube.com/playlist?list=…` or a channel’s playlists tab) resolve to the owning channel when possible.
+
+## [2.0.0] - 2026-09-20
+
+### Added
+- Local channel blocklist in **Settings**: paste a channel link, `@handle`, or channel ID to hide every video from that channel.
+- Settings list of blocked channels with **Remove** to show their videos again.
+- Optional **Block channel on this page** when the current YouTube tab has an identifiable channel.
+- Toolbar badge showing how many videos were filtered in the current browser session.
+- Popup status line showing whether the content script is active on the current tab.
+
 ### Fixed
 - Content script loads keywords from a bundled JS file and does not call `chrome.storage` or fetch extension JSON on YouTube pages (those calls were reported as extension errors and aborted filtering).
 - Filtering attaches to already-open YouTube tabs after an extension reload.
 - Reaction videos opened on the watch page are blocked too, not only search/grid cards.
-
-### Added
-- Toolbar badge showing how many videos were filtered in the current browser session.
-- Popup status line showing whether the content script is active on the current tab.
 
 ### Changed
 - Session filter count and recent list now live in `chrome.storage.session` (reset when Chrome quits), instead of accumulating in local storage.
@@ -89,6 +101,8 @@ and this project uses [Semantic Versioning](https://semver.org/).
 - Popup toggle, filter count, and language display.
 - Infinite-scroll / live DOM filtering via mutation observer.
 
+[2.1.0]: https://github.com/lohmibln/ReactionBlocker/compare/v2.0.0...v2.1.0
+[2.0.0]: https://github.com/lohmibln/ReactionBlocker/compare/v1.1.6...v2.0.0
 [1.1.6]: https://github.com/lohmibln/ReactionBlocker/compare/v1.1.5...v1.1.6
 [1.1.5]: https://github.com/lohmibln/ReactionBlocker/compare/v1.1.4...v1.1.5
 [1.1.4]: https://github.com/lohmibln/ReactionBlocker/compare/v1.1.3...v1.1.4

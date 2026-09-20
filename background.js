@@ -1,10 +1,14 @@
+importScripts("channel-blocklist.js");
+
 const FILTER_LOG_LIMIT = 80;
+const BLOCKLIST_LIMIT = 500;
 const YOUTUBE_TAB_URLS = [
   "https://www.youtube.com/*",
   "https://youtube.com/*",
   "https://m.youtube.com/*"
 ];
 const sessionStore = chrome.storage.session;
+const RBChannels = globalThis.RBChannelBlocklist;
 
 function recordKey(entry) {
   if (!entry) return "";
@@ -103,16 +107,127 @@ chrome.storage.onChanged.addListener((changes, area) => {
   }
 });
 
+async function readBlockedChannels() {
+  const stored = await chrome.storage.local.get(["blockedChannels"]);
+  return RBChannels.sanitizeBlockedChannels(stored.blockedChannels);
+}
+
+async function fetchYouTubeHtml(url) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 5000);
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      credentials: "include",
+      redirect: "follow",
+      signal: controller.signal,
+      headers: { Accept: "text/html" }
+    });
+    if (!response.ok) return "";
+    return await response.text();
+  } catch (_err) {
+    return "";
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function resolveChannelEntry(input) {
+  const parsed = RBChannels.parseChannelInput(input);
+  if (parsed.error === "empty") {
+    return { ok: false, error: "Paste a YouTube channel link, @handle, or channel ID." };
+  }
+  if (parsed.error === "not-youtube") {
+    return { ok: false, error: "That isn't a YouTube link." };
+  }
+
+  let fields = RBChannels.mergeChannelFields(parsed);
+  const fetchUrl = RBChannels.channelFetchUrl(parsed, input);
+  if (fetchUrl) {
+    const html = await fetchYouTubeHtml(fetchUrl);
+    if (html) {
+      fields = RBChannels.mergeChannelFields(
+        fields,
+        RBChannels.parseChannelFromHtml(html, fetchUrl)
+      );
+    }
+  }
+
+  const entry = RBChannels.normalizeEntry({
+    ...fields,
+    input: String(input || "").trim(),
+    addedAt: Date.now()
+  });
+
+  if (!entry) {
+    if (parsed.videoId) {
+      return {
+        ok: false,
+        error: "Couldn't find a channel from that video link. Use a channel URL like youtube.com/@name."
+      };
+    }
+    if (parsed.playlistId) {
+      return {
+        ok: false,
+        error: "Couldn't find a channel from that playlist. Use a channel URL like youtube.com/@name."
+      };
+    }
+    if (parsed.error === "not-channel") {
+      return { ok: false, error: "Use a channel link like youtube.com/@name." };
+    }
+    return { ok: false, error: "Couldn't recognize that channel." };
+  }
+
+  return { ok: true, entry };
+}
+
+async function addBlockedChannel(input) {
+  const resolved = await resolveChannelEntry(input);
+  if (!resolved.ok) return resolved;
+
+  const list = await readBlockedChannels();
+  if (list.some((item) => RBChannels.sameChannel(item, resolved.entry))) {
+    return {
+      ok: false,
+      error: "That channel is already blocked.",
+      blockedChannels: list
+    };
+  }
+  if (list.length >= BLOCKLIST_LIMIT) {
+    return {
+      ok: false,
+      error: "Blocklist is full (500 channels).",
+      blockedChannels: list
+    };
+  }
+
+  list.push(resolved.entry);
+  await chrome.storage.local.set({ blockedChannels: list });
+  return { ok: true, blockedChannels: list, entry: resolved.entry };
+}
+
+async function removeBlockedChannel(key) {
+  const list = (await readBlockedChannels()).filter((item) => item.key !== key);
+  await chrome.storage.local.set({ blockedChannels: list });
+  return { ok: true, blockedChannels: list };
+}
+
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (!message || typeof message !== "object") return;
 
   if (message.type === "rb-get-state") {
     Promise.all([
-      chrome.storage.local.get(["enabled", "language"]),
+      chrome.storage.local.get(["enabled", "language", "blockedChannels"]),
       sessionStore.get(["filterCount"])
     ])
       .then(([localStored, sessionStored]) =>
-        sendResponse({ ...(localStored || {}), ...(sessionStored || {}) })
+        sendResponse({
+          ...(localStored || {}),
+          ...(sessionStored || {}),
+          blockedChannels: RBChannels.sanitizeBlockedChannels(
+            localStored && localStored.blockedChannels
+          )
+        })
       )
       .catch(() => sendResponse({}));
     return true;
@@ -122,6 +237,20 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     appendFilterLog(message.entries)
       .then((result) => sendResponse(result))
       .catch(() => sendResponse({ filterCount: 0 }));
+    return true;
+  }
+
+  if (message.type === "rb-add-blocked-channel") {
+    addBlockedChannel(message.input)
+      .then((result) => sendResponse(result))
+      .catch(() => sendResponse({ ok: false, error: "Couldn't add that channel." }));
+    return true;
+  }
+
+  if (message.type === "rb-remove-blocked-channel") {
+    removeBlockedChannel(message.key)
+      .then((result) => sendResponse(result))
+      .catch(() => sendResponse({ ok: false, error: "Couldn't remove that channel." }));
     return true;
   }
 });

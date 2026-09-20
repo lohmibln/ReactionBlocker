@@ -17,7 +17,7 @@
       </div>
     </header>
 
-    <main>
+    <main id="main-view">
       <label class="toggle-row" for="enable-filter">
         <span>Enable filtering</span>
         <input id="enable-filter" type="checkbox" />
@@ -63,11 +63,48 @@
       <p id="placeholder-note" class="hint" hidden></p>
     </main>
 
+    <section id="settings-view" hidden>
+      <div class="settings-top">
+        <button id="settings-back" type="button" class="btn btn-back">Back</button>
+        <h2>Settings</h2>
+      </div>
+
+      <section class="log-section blocklist-section" aria-labelledby="blocklist-heading">
+        <h2 id="blocklist-heading">Blocked channels</h2>
+        <p class="hint">
+          Hide every video from a channel, even without a reaction title. Paste any
+          channel link — videos, shorts, playlists, about — and it is reduced to
+          youtube.com/@name.
+        </p>
+
+        <form id="block-form" class="block-form">
+          <label class="sr-only" for="block-input">Channel link, @handle, or ID</label>
+          <input
+            id="block-input"
+            type="text"
+            name="channel"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="youtube.com/@channel"
+          />
+          <button id="block-add-btn" type="submit" class="btn btn-accent">Add</button>
+        </form>
+        <button id="block-current-btn" type="button" class="btn btn-full" hidden>
+          Block channel on this page
+        </button>
+        <p id="block-status" class="hint" hidden></p>
+
+        <p id="blocked-empty" class="hint log-empty">No blocked channels yet.</p>
+        <ul id="blocked-list" class="filtered-list blocked-list" hidden></ul>
+      </section>
+    </section>
+
     <footer class="footer">
       <span>ReactionBlocker</span>
       <span id="version">v1.0.0</span>
     </footer>
 
+    <script src="channel-blocklist.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

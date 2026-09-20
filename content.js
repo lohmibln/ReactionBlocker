@@ -1,5 +1,5 @@
 (() => {
-const RB_VERSION = "1.1.6";
+const RB_VERSION = "2.1.0";
 
 if (globalThis.__reactionBlockerVersion === RB_VERSION) {
   if (typeof globalThis.__reactionBlockerRescan === "function") {
@@ -62,10 +62,27 @@ const CHANNEL_SELECTORS = [
   "yt-formatted-string.ytd-channel-name"
 ];
 
+const CHANNEL_LINK_SELECTORS = [
+  "ytd-channel-name a[href]",
+  "#channel-name a[href]",
+  "#channel-info a[href]",
+  "ytd-video-owner-renderer a[href]",
+  "#owner a[href]",
+  ".ytd-channel-name a[href]",
+  "a.yt-simple-endpoint[href*='/@']",
+  "a.yt-core-attributed-string__link[href*='/@']",
+  ".ytContentMetadataViewModelMetadataRow a[href]",
+  ".yt-content-metadata-view-model__metadata-row a[href]",
+  "yt-formatted-string.ytd-channel-name a[href]"
+];
+
+const RBChannels = globalThis.RBChannelBlocklist;
+
 const DEFAULT_SETTINGS = {
   enabled: true,
   language: "auto",
-  filterCount: 0
+  filterCount: 0,
+  blockedChannels: []
 };
 
 let keywordsByLanguage = {
@@ -114,6 +131,7 @@ async function init() {
   settings.enabled = stored.enabled !== false;
   settings.language = stored.language || "auto";
   settings.filterCount = Number(stored.filterCount) || 0;
+  settings.blockedChannels = RBChannels.sanitizeBlockedChannels(stored.blockedChannels);
 
   if (!settings.enabled) {
     restoreHiddenVideos();
@@ -226,6 +244,14 @@ function onStorageChanged(changes, area) {
     settings.language = changes.language.newValue || "auto";
     rescanWithoutDoubleCount();
   }
+
+  if (changes.blockedChannels) {
+    settings.blockedChannels = RBChannels.sanitizeBlockedChannels(
+      changes.blockedChannels.newValue
+    );
+    restoreHiddenVideos("channel");
+    if (settings.enabled) scanAndFilter();
+  }
 }
 
 function rescanWithoutDoubleCount() {
@@ -307,12 +333,16 @@ function scanAndFilter() {
   }
 
   const phrases = getActiveKeywords();
-  if (!phrases.length) return;
+  const hasBlocks = settings.blockedChannels && settings.blockedChannels.length;
+  if (!phrases.length && !hasBlocks) {
+    removeWatchOverlay();
+    return;
+  }
 
   getVideoCards().forEach((videoEl) => {
-    if (videoEl.dataset.filtered === "reaction") return;
+    if (videoEl.dataset.filtered) return;
     if (shouldHideVideo(videoEl, phrases)) {
-      hideVideo(videoEl);
+      hideVideo(videoEl, videoEl.dataset.rbKind || "reaction");
     }
   });
 
@@ -328,15 +358,23 @@ function getVideoCards() {
 }
 
 function shouldHideVideo(videoEl, phrases) {
-  const title = extractTitle(videoEl);
-  const channel = extractChannel(videoEl);
+  const channelInfo = extractChannelInfo(videoEl);
+  const blocked = RBChannels.matchBlockedChannel(channelInfo, settings.blockedChannels);
+  if (blocked) {
+    videoEl.dataset.rbMatch = `channel:${RBChannels.formatChannelLabel(blocked)}`;
+    videoEl.dataset.rbChannel = channelInfo.name || blocked.name || "";
+    videoEl.dataset.rbKind = "channel";
+    return true;
+  }
 
+  const title = extractTitle(videoEl);
   if (!title) return false;
 
   const matched = findMatchingKeyword(title, phrases);
   if (matched) {
     videoEl.dataset.rbMatch = matched;
-    videoEl.dataset.rbChannel = channel;
+    videoEl.dataset.rbChannel = channelInfo.name || extractChannel(videoEl);
+    videoEl.dataset.rbKind = "reaction";
     return true;
   }
 
@@ -372,6 +410,52 @@ function extractTitle(card) {
 
 function extractChannel(card) {
   return getTextFromSelectors(card, CHANNEL_SELECTORS);
+}
+
+function extractChannelInfo(root) {
+  const info = {
+    name: "",
+    handle: "",
+    channelId: "",
+    customUrl: "",
+    user: ""
+  };
+  if (!root) return info;
+
+  const applyParsed = (parsed) => {
+    if (!parsed) return;
+    if (parsed.handle && !info.handle) info.handle = parsed.handle;
+    if (parsed.channelId && !info.channelId) info.channelId = parsed.channelId;
+    if (parsed.customUrl && !info.customUrl) info.customUrl = parsed.customUrl;
+    if (parsed.user && !info.user) info.user = parsed.user;
+  };
+
+  for (const selector of CHANNEL_LINK_SELECTORS) {
+    const node = queryFirstDeep(root, [selector]);
+    if (!node) continue;
+    applyParsed(RBChannels.parseChannelHref(node.getAttribute("href") || ""));
+    const text = (node.textContent || "").trim();
+    if (text && !info.name) info.name = text;
+    if (info.handle || info.channelId || info.customUrl || info.user) break;
+  }
+
+  if (!info.handle && !info.channelId && !info.customUrl && !info.user) {
+    const links = queryAllDeep(root, "a[href]");
+    for (const link of links) {
+      const parsed = RBChannels.parseChannelHref(link.getAttribute("href") || "");
+      if (!parsed) continue;
+      applyParsed(parsed);
+      const text = (link.textContent || "").trim();
+      if (text && !info.name) info.name = text;
+      if (info.handle || info.channelId || info.customUrl || info.user) break;
+    }
+  }
+
+  if (!info.name) {
+    info.name = extractChannel(root);
+  }
+
+  return info;
 }
 
 function extractVideoId(card) {
@@ -457,15 +541,15 @@ function matchSoftGenreTag(title) {
   return `genre:${match[1].toLowerCase()}`;
 }
 
-function hideVideo(videoEl) {
+function hideVideo(videoEl, kind = "reaction") {
   const target =
     videoEl.closest(
-      "ytd-rich-item-renderer, ytd-video-renderer, ytd-grid-video-renderer, ytd-compact-video-renderer, ytd-reel-item-renderer, yt-lockup-view-model"
+      "ytd-rich-item-renderer, ytd-video-renderer, ytd-grid-video-renderer, ytd-compact-video-renderer, ytd-reel-item-renderer, ytd-shorts-lockup-view-model, yt-lockup-view-model, ytd-lockup-view-model"
     ) || videoEl;
   target.style.setProperty("display", "none", "important");
-  target.dataset.filtered = "reaction";
+  target.dataset.filtered = kind;
   if (target !== videoEl) {
-    videoEl.dataset.filtered = "reaction";
+    videoEl.dataset.filtered = kind;
   }
 
   const title = extractTitle(videoEl);
@@ -490,12 +574,14 @@ function hideVideo(videoEl) {
   }
 }
 
-function restoreHiddenVideos() {
-  document.querySelectorAll('[data-filtered="reaction"]').forEach((el) => {
+function restoreHiddenVideos(kind) {
+  const selector = kind ? `[data-filtered="${kind}"]` : "[data-filtered]";
+  document.querySelectorAll(selector).forEach((el) => {
     el.style.removeProperty("display");
     delete el.dataset.filtered;
     delete el.dataset.rbMatch;
     delete el.dataset.rbChannel;
+    delete el.dataset.rbKind;
   });
 }
 
@@ -555,15 +641,71 @@ function detectLanguageKey() {
   return "english";
 }
 
+function isWatchLikePath() {
+  return location.pathname.startsWith("/watch") || location.pathname.startsWith("/shorts/");
+}
+
+function getPageVideoId() {
+  if (location.pathname.startsWith("/watch")) {
+    return new URLSearchParams(location.search).get("v") || "";
+  }
+  const shorts = location.pathname.match(/^\/shorts\/([a-zA-Z0-9_-]{6,})/);
+  return shorts ? shorts[1] : "";
+}
+
+function extractWatchChannel() {
+  const roots = [
+    document.querySelector("ytd-video-owner-renderer"),
+    document.querySelector("#owner"),
+    document.querySelector("ytd-reel-player-overlay-renderer")
+  ].filter(Boolean);
+
+  for (const root of roots) {
+    const info = extractChannelInfo(root);
+    if (info.handle || info.channelId || info.customUrl || info.user) {
+      return info;
+    }
+  }
+
+  for (const root of roots) {
+    const info = extractChannelInfo(root);
+    if (info.name) return info;
+  }
+
+  return { name: "", handle: "", channelId: "", customUrl: "", user: "" };
+}
+
+function extractPageChannel() {
+  const fromUrl = RBChannels.parseChannelInput(location.href);
+  const fromWatch = isWatchLikePath() ? extractWatchChannel() : null;
+  const header = document.querySelector(
+    "#channel-header, ytd-c4-tabbed-header-renderer, yt-page-header-renderer, yt-page-header-view-model"
+  );
+  const fromHeader = header ? extractChannelInfo(header) : null;
+  const merged = RBChannels.mergeChannelFields(fromUrl, fromWatch, fromHeader);
+  if (!RBChannels.hasChannelIdentity(merged)) return null;
+  return merged;
+}
+
 function scanWatchPage(phrases) {
-  if (!location.pathname.startsWith("/watch")) {
+  if (!isWatchLikePath()) {
     removeWatchOverlay();
     return;
   }
 
-  const videoId = new URLSearchParams(location.search).get("v") || "";
+  const videoId = getPageVideoId();
   if (videoId && allowWatchIds.has(videoId)) {
     removeWatchOverlay();
+    return;
+  }
+
+  const blocked = RBChannels.matchBlockedChannel(
+    extractWatchChannel(),
+    settings.blockedChannels
+  );
+  if (blocked) {
+    const title = extractWatchTitle() || "This video";
+    showWatchOverlay(title, `channel:${RBChannels.formatChannelLabel(blocked)}`, videoId);
     return;
   }
 
@@ -610,7 +752,7 @@ function showWatchOverlay(title, matched, videoId) {
       '<div class="rb-watch-card">' +
       "<strong>ReactionBlocker hid this video</strong>" +
       '<p data-rb-title></p>' +
-      '<p class="rb-watch-kw">Matched: <span data-rb-kw></span></p>' +
+      '<p class="rb-watch-kw"><span data-rb-kw-label>Matched:</span> <span data-rb-kw></span></p>' +
       '<button type="button" data-rb-allow>Show anyway</button>' +
       "</div>";
     overlay.style.cssText =
@@ -636,17 +778,19 @@ function showWatchOverlay(title, matched, videoId) {
 
   overlay.dataset.videoId = videoId;
   overlay.querySelector("[data-rb-title]").textContent = title;
-  overlay.querySelector("[data-rb-kw]").textContent = matched;
+  const isChannel = String(matched).startsWith("channel:");
+  const labelEl = overlay.querySelector("[data-rb-kw-label]");
+  if (labelEl) {
+    labelEl.textContent = isChannel ? "Blocked channel:" : "Matched:";
+  }
+  overlay.querySelector("[data-rb-kw]").textContent = isChannel
+    ? String(matched).slice("channel:".length)
+    : matched;
   overlay.style.display = "flex";
 
   if (incrementCount && videoId && !loggedWatchIds.has(videoId)) {
     loggedWatchIds.add(videoId);
-    const channel =
-      (
-        document.querySelector("ytd-video-owner-renderer #channel-name a") ||
-        document.querySelector("#owner #channel-name a") ||
-        {}
-      ).textContent || "";
+    const channel = extractWatchChannel().name || "";
     console.log("[ReactionBlocker] Blocked watch page:", { title, keyword: matched });
     enqueueFilterRecord({
       title,
@@ -686,6 +830,11 @@ function onRuntimeMessage(message, _sender, sendResponse) {
   if (message.type === "rb-storage-changed") {
     onStorageChanged(message.changes || {}, "local");
     sendResponse({ ok: true });
+    return true;
+  }
+
+  if (message.type === "rb-get-page-channel") {
+    sendResponse({ ok: true, channel: extractPageChannel() });
     return true;
   }
 }
